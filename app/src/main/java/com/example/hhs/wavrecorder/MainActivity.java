@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private static final int SUPPRESSION_MS = 1500;
     private static final int MINIMUM_COUNT = 3;
     private static final long MINIMUM_TIME_BETWEEN_SAMPLES_MS = 30;
-    private static final String LABEL_FILENAME = "file:///android_asset/conv_labels.txt";
+    private static final String LABEL_FILENAME = "file:///android_asset/labels.txt";
     private static final String MODEL_FILENAME = "file:///android_asset/no_tone1.pb";
     private static final String INPUT_DATA_NAME = "decoded_sample_data:0";
     private static final String SAMPLE_RATE_NAME = "decoded_sample_data:1";
