@@ -73,20 +73,17 @@ public class FTPManager extends AsyncTask<Void, Void, String> {
 
             String label = remoteDir;
             String filename = mFile.getName();
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("label", label);
-            jsonObject.put("filename", filename);
-            JSONObject params = new JSONObject();
-            params.put("data", jsonObject);
-            String json = "{\"data\":" + jsonObject.toString() + "}";
-            StringEntity s = new StringEntity(json);
+            String json = "{\"data\":{\"label\":\"" + label +"\", \"filename\":\"" + filename + "\"}}";
+            StringEntity s = new StringEntity(json, "UTF-8");
             System.out.println(json);
-            s.setContentEncoding("UTF-8");
-            s.setContentType("application/json");
+            //s.setContentEncoding("UTF-8");
+            //s.setContentType("application/json");
 
             String url = "http://" + host + ":5000/recognize";
             HttpClient httpClient = new DefaultHttpClient();
             HttpPost httpPost = new HttpPost(url);
+            httpPost.setHeader("Accept", "application/json");
+            httpPost.setHeader("Content-type", "application/json");
             httpPost.setEntity(s);
             HttpResponse httpResponse = httpClient.execute(httpPost);
             HttpEntity httpEntity = httpResponse.getEntity();
