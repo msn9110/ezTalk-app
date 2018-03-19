@@ -2,28 +2,17 @@ package com.example.hhs.wavrecorder;
 
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.Intent;
 import android.os.AsyncTask;
 import android.widget.Toast;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-
-import static com.example.hhs.wavrecorder.MyReceiver.RECOGNITION_FINISHED_ACTION;
 
 public class FTPManager extends AsyncTask<Void, Void, String> {
 
@@ -55,7 +44,6 @@ public class FTPManager extends AsyncTask<Void, Void, String> {
             if (checkDirectoryExists(remoteDir) ||
                     ftpClient.makeDirectory(remoteDir)) {
                 ftpClient.changeWorkingDirectory(remoteDir);
-                System.out.println(ftpClient.printWorkingDirectory());
                 inputStream = new FileInputStream(mFile);
                 ftpClient.setBufferSize(1024);
 
@@ -63,27 +51,7 @@ public class FTPManager extends AsyncTask<Void, Void, String> {
                 ftpClient.storeFile(mFile.getName(), inputStream);
                 inputStream.close();
 
-                String filename = mFile.getName();
-                String json = "{\"data\":{\"label\":\"" + remoteDir +"\", \"filename\":\"" + filename + "\"}}";
-                StringEntity s = new StringEntity(json, "UTF-8");
-                System.out.println(json);
-                //s.setContentEncoding("UTF-8");
-                //s.setContentType("application/json");
-
-                String url = "http://" + host + ":5000/recognize";
-                HttpClient httpClient = new DefaultHttpClient();
-                HttpPost httpPost = new HttpPost(url);
-                httpPost.setHeader("Accept", "application/json");
-                httpPost.setHeader("Content-type", "application/json");
-                httpPost.setEntity(s);
-                HttpResponse httpResponse = httpClient.execute(httpPost);
-                HttpEntity httpEntity = httpResponse.getEntity();
-
-                String myResult = getJSONString(httpEntity);
-                Intent intent = new Intent(RECOGNITION_FINISHED_ACTION);
-                intent.putExtra("response", myResult);
-                intent.putExtra("label", remoteDir);
-                mContext.sendBroadcast(intent);
+                new Recogntion(mContext, mFile.getName(), remoteDir).execute();
             }
         } catch (Exception ex) {
             result = "連線異常";
@@ -100,18 +68,6 @@ public class FTPManager extends AsyncTask<Void, Void, String> {
         return result;
     }
 
-    private String getJSONString(HttpEntity httpEntity) throws IOException {
-        InputStream is = httpEntity.getContent();
-
-        BufferedReader bufReader = new BufferedReader(new InputStreamReader(is, "utf-8"), 8);
-        StringBuilder builder = new StringBuilder();
-        String line;
-        while((line = bufReader.readLine()) != null) {
-            builder.append(line + "\n");
-        }
-        is.close();
-        return builder.toString();
-    }
 
     @Override
     protected void onPostExecute(String s) {

@@ -237,6 +237,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         dialog.show();
     }
 
+    @Override
     public void onFinishRecognition(String result, String label) {
         try {
             JSONObject jsonObject = new JSONObject(result);
