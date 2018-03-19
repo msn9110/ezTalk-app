@@ -1,32 +1,28 @@
 package com.example.hhs.wavrecorder;
 
 import android.Manifest;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.media.MediaScannerConnection;
 import android.os.Build;
-import android.os.Environment;
 import android.os.Handler;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
-import android.widget.Button;
 import android.widget.ListView;
-import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -34,11 +30,16 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener
+import static com.example.hhs.wavrecorder.MyReceiver.RECOGNITION_FINISHED_ACTION;
+import static com.example.hhs.wavrecorder.MyReceiver.RECORD_FINISHED_ACTION;
+
+public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener,
+        MyListener
 {
 
     // Constants that control the behavior of the recognition code and model
@@ -63,17 +64,19 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     private WAVRecorder wavRecorder;
     private boolean isRecord = false;
-    private ListView listLabels, listProns;
+    private ListView listLabels, listTones;
     private TextView txtRes, txtAcc, txtRecState;
     private Handler mHandler = new Handler();
     private static final int REQUEST_RECORD_AUDIO = 13;
     private Context mContext;
     private MyReceiver myReceiver = new MyReceiver();
 
-    private List<String> prons = new ArrayList<>();
-    private List<String> labels = new ArrayList<String>();
+    private List<String> labels = new ArrayList<>();
     private List<String> displayedLabels = new ArrayList<>();
-    private int total = 0, success = 0, selectPosition = 1;
+    private int total = 0, count = 0;
+    String tone = "1";
+    
+    MyAdapter toneAdapter;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -81,13 +84,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mContext = this;
         requestPermission();
         listLabels = (ListView) findViewById(R.id.listLabels);
-        listProns = (ListView) findViewById(R.id.listPron);
+        listTones = (ListView) findViewById(R.id.listPron);
         txtRes = (TextView) findViewById(R.id.txtRes);
         txtAcc = (TextView) findViewById(R.id.txtAcc);
         txtRecState = (TextView) findViewById(R.id.txtRecState);
 
-        for (int i = 0; i < 5; i++)
-            prons.add(String.valueOf(i));
         // Load the labels for the model, but only display those that don't start
         // with an underscore.
         String actualFilename = LABEL_FILENAME.split("file:///android_asset/")[1];
@@ -113,22 +114,29 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         listLabels.setAdapter(arrayAdapter);
         listLabels.setOnItemClickListener(this);
 
-        final MyAdapter myAdapter = new MyAdapter(this, prons);
-        listProns.setAdapter(myAdapter);
-        listProns.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        List<String> tones = new ArrayList<>(Arrays.asList("0", "1", "2", "3", "4"));
+        toneAdapter = new MyAdapter(this, tones);
+        listTones.setAdapter(toneAdapter);
+        listTones.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                selectPosition = i;
-                myAdapter.notifyDataSetChanged();
+                toneAdapter.setSelectPosition(i);
+                toneAdapter.notifyDataSetChanged();
+                tone = ((ViewHolder) view.getTag()).name.getText().toString();
             }
         });
-        listProns.setSelection(1);
+        toneAdapter.setSelectPosition(1);
+        //listTones.setSelection(1);
+        myReceiver.setOnListener(this);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        registerReceiver(myReceiver, new IntentFilter(RECORD_FINISHED_ACTION));
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(RECORD_FINISHED_ACTION);
+        intentFilter.addAction(RECOGNITION_FINISHED_ACTION);
+        registerReceiver(myReceiver, intentFilter);
     }
 
     @Override
@@ -161,7 +169,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         switch (adapterView.getId()) {
             case R.id.listLabels:
                 SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd-hhmmss", Locale.getDefault());
-                final String path = "MyRecorder/" + select + "/" + prons.get(selectPosition) +
+                final String path = "MyRecorder/" + select + "/" + tone +
                                                              "-" + df.format(new Date()) + ".wav";
                 Thread worker = new Thread(new Runnable() {
                     @Override
@@ -195,10 +203,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     private void startRecognition(File file) {
         Toast.makeText(mContext, "saved to : " + file.getAbsolutePath(), Toast.LENGTH_SHORT).show();
-        new FTPManager(mContext, file,null).execute();
+        new FTPManager(mContext, file).execute();
     }
 
-    private void onFinishedRecord(String path) {
+    @Override
+    public void onFinishRecord(String path) {
         txtRecState.setVisibility(View.GONE);
         final File file = new File(path);
 
@@ -228,67 +237,34 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         dialog.show();
     }
 
-    public final static String RECORD_FINISHED_ACTION = "com.hhs.record_finished_action";
-    private class MyReceiver extends BroadcastReceiver {
+    public void onFinishRecognition(String result, String label) {
+        try {
+            JSONObject jsonObject = new JSONObject(result);
+            JSONObject response = jsonObject.getJSONObject("response");
+            boolean success = response.getBoolean("success");
+            txtRes.setText("");
+            if (success) {
+                total += 1;
+                JSONArray pronouces = response.getJSONArray("result");
+                ArrayList<String> myResults = new ArrayList<>();
+                String text = "";
+                for (int i = 0; i < pronouces.length(); i++) {
+                    String element = pronouces.getString(i);
+                    if (element.contentEquals(label))
+                        count += 1;
+                    myResults.add(element);
+                    text += element + ",";
 
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            switch (action) {
-                case RECORD_FINISHED_ACTION:
-                    String outputPath = intent.getStringExtra("filepath");
-                    onFinishedRecord(outputPath);
-                    break;
+                }
+                System.out.println(text);
+                txtRes.setText(text);
+                String accuracy = String.valueOf(count) + "/" + String.valueOf(total);
+                txtAcc.setText(accuracy);
             }
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
     }
 
-
-    public class MyAdapter extends BaseAdapter {
-        Context context;
-        List<String> myList;
-        LayoutInflater mInflater;
-        public MyAdapter(Context context,List<String> mList){
-            this.context = context;
-            this.myList = mList;
-            mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        }
-        @Override
-        public int getCount() {
-            return myList.size();
-        }
-
-        @Override
-        public Object getItem(int position) {
-            return position;
-        }
-
-        @Override
-        public long getItemId(int position) {
-            return position;
-        }
-        @Override
-        public View getView(final int position, View convertView, ViewGroup parent) {
-
-            ViewHolder viewHolder = null;
-            if(convertView == null){
-                convertView = mInflater.inflate(R.layout.adapter_item,parent,false);
-                viewHolder = new ViewHolder();
-                viewHolder.name = (TextView)convertView.findViewById(R.id.id_name);
-                viewHolder.select = (RadioButton)convertView.findViewById(R.id.id_select);
-                convertView.setTag(viewHolder);
-            }else{
-                viewHolder = (ViewHolder)convertView.getTag();
-            }
-            viewHolder.name.setText(myList.get(position));
-            if(selectPosition == position){
-                viewHolder.select.setChecked(true);
-            }
-            else{
-                viewHolder.select.setChecked(false);
-            }
-            return convertView;
-        }
-    }
 
 }

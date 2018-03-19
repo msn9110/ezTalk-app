@@ -2,6 +2,7 @@ package com.example.hhs.wavrecorder;
 
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.widget.Toast;
 
@@ -10,15 +11,10 @@ import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.protocol.HTTP;
-import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -26,21 +22,18 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.InetAddress;
-import java.util.ArrayList;
 
+import static com.example.hhs.wavrecorder.MyReceiver.RECOGNITION_FINISHED_ACTION;
 
 public class FTPManager extends AsyncTask<Void, Void, String> {
 
     private Context mContext;
     private File mFile;
-    private String mContent;
     private FTPClient ftpClient;
 
-    public FTPManager(Context context, File file, String content) {
+    public FTPManager(Context context, File file) {
         this.mContext = context;
         this.mFile = file;
-        this.mContent = content;
     }
 
 
@@ -68,52 +61,30 @@ public class FTPManager extends AsyncTask<Void, Void, String> {
 
                 ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
                 ftpClient.storeFile(mFile.getName(), inputStream);
-                System.out.println(8888);
+                inputStream.close();
+
+                String filename = mFile.getName();
+                String json = "{\"data\":{\"label\":\"" + remoteDir +"\", \"filename\":\"" + filename + "\"}}";
+                StringEntity s = new StringEntity(json, "UTF-8");
+                System.out.println(json);
+                //s.setContentEncoding("UTF-8");
+                //s.setContentType("application/json");
+
+                String url = "http://" + host + ":5000/recognize";
+                HttpClient httpClient = new DefaultHttpClient();
+                HttpPost httpPost = new HttpPost(url);
+                httpPost.setHeader("Accept", "application/json");
+                httpPost.setHeader("Content-type", "application/json");
+                httpPost.setEntity(s);
+                HttpResponse httpResponse = httpClient.execute(httpPost);
+                HttpEntity httpEntity = httpResponse.getEntity();
+
+                String myResult = getJSONString(httpEntity);
+                Intent intent = new Intent(RECOGNITION_FINISHED_ACTION);
+                intent.putExtra("response", myResult);
+                intent.putExtra("label", remoteDir);
+                mContext.sendBroadcast(intent);
             }
-
-            String label = remoteDir;
-            String filename = mFile.getName();
-            String json = "{\"data\":{\"label\":\"" + label +"\", \"filename\":\"" + filename + "\"}}";
-            StringEntity s = new StringEntity(json, "UTF-8");
-            System.out.println(json);
-            //s.setContentEncoding("UTF-8");
-            //s.setContentType("application/json");
-
-            String url = "http://" + host + ":5000/recognize";
-            HttpClient httpClient = new DefaultHttpClient();
-            HttpPost httpPost = new HttpPost(url);
-            httpPost.setHeader("Accept", "application/json");
-            httpPost.setHeader("Content-type", "application/json");
-            httpPost.setEntity(s);
-            HttpResponse httpResponse = httpClient.execute(httpPost);
-            HttpEntity httpEntity = httpResponse.getEntity();
-
-            /*
-            String url = "http://1.34.132.90/recordings/insert.php";
-            String file_id = mFile.getName().replace(".mp4","");
-            ArrayList<NameValuePair> params = new ArrayList<>();
-            params.add(new BasicNameValuePair("file_id", file_id));
-            params.add(new BasicNameValuePair("content", mContent));
-
-            HttpClient httpClient = new DefaultHttpClient();
-            HttpPost httpPost = new HttpPost(url);
-            httpPost.setEntity(new UrlEncodedFormEntity(params, HTTP.UTF_8));
-            HttpResponse httpResponse = httpClient.execute(httpPost);
-            HttpEntity httpEntity = httpResponse.getEntity();
-            InputStream is = httpEntity.getContent();
-
-            BufferedReader bufReader = new BufferedReader(new InputStreamReader(is, "utf-8"), 8);
-            StringBuilder builder = new StringBuilder();
-            String line;
-            while((line = bufReader.readLine()) != null) {
-                builder.append(line + "\n");
-            }
-            inputStream.close();
-            JSONObject jsonData = new JSONObject(builder.toString());
-            int success = Integer.parseInt(jsonData.getString("success"));
-            if (success == 0)
-                result = "insert failed";
-            */
         } catch (Exception ex) {
             result = "連線異常";
             ex.printStackTrace();
@@ -127,6 +98,19 @@ public class FTPManager extends AsyncTask<Void, Void, String> {
             }
         }
         return result;
+    }
+
+    private String getJSONString(HttpEntity httpEntity) throws IOException {
+        InputStream is = httpEntity.getContent();
+
+        BufferedReader bufReader = new BufferedReader(new InputStreamReader(is, "utf-8"), 8);
+        StringBuilder builder = new StringBuilder();
+        String line;
+        while((line = bufReader.readLine()) != null) {
+            builder.append(line + "\n");
+        }
+        is.close();
+        return builder.toString();
     }
 
     @Override

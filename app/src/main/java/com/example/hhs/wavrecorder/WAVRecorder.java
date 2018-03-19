@@ -14,6 +14,8 @@ import android.media.MediaRecorder;
 import android.media.MediaScannerConnection;
 import android.os.Environment;
 
+import static com.example.hhs.wavrecorder.MyReceiver.RECORD_FINISHED_ACTION;
+
 public class WAVRecorder {
     private Context mContext;
     private static final int RECORDER_BPP = 16;
@@ -136,7 +138,7 @@ public class WAVRecorder {
         copyWaveFile(getTempFilename(), getFilename());
         deleteTempFile();
         MediaScannerConnection.scanFile(mContext, new String[] {output}, null, null);
-        Intent intent = new Intent(MainActivity.RECORD_FINISHED_ACTION);
+        Intent intent = new Intent(RECORD_FINISHED_ACTION);
         intent.putExtra("filepath", output);
         mContext.sendBroadcast(intent);
     }
