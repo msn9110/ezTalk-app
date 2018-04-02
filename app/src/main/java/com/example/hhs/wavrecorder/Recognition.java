@@ -79,7 +79,7 @@ public class Recognition extends Thread {
         mHandler.post(new Runnable() {
             @Override
             public void run() {
-                if (s.length() >= 0)   Toast.makeText(mContext, s, Toast.LENGTH_LONG).show();
+                if (s.length() > 0)   Toast.makeText(mContext, s, Toast.LENGTH_LONG).show();
             }
         });
 
