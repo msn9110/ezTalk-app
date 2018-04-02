@@ -3,6 +3,7 @@ package com.example.hhs.wavrecorder;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.AsyncTask;
+import android.os.Handler;
 import android.widget.Toast;
 
 import org.apache.commons.io.IOUtils;
@@ -19,12 +20,18 @@ public class FTPManager extends AsyncTask<Void, Void, String> {
     private Context mContext;
     private File mFile;
     private FTPClient ftpClient;
+    private Handler mHandler;
 
     public FTPManager(Context context, File file) {
         this.mContext = context;
         this.mFile = file;
     }
 
+    @Override
+    protected void onPreExecute() {
+        super.onPreExecute();
+        mHandler = new Handler();
+    }
 
     @Override
     protected String doInBackground(Void... voids) {
@@ -51,7 +58,7 @@ public class FTPManager extends AsyncTask<Void, Void, String> {
                 ftpClient.storeFile(mFile.getName(), inputStream);
                 inputStream.close();
 
-                new Recogntion(mContext, mFile.getName(), remoteDir).execute();
+                new Recognition(mContext, mFile.getName(), remoteDir, mHandler).start();
             }
         } catch (Exception ex) {
             result = "連線異常";

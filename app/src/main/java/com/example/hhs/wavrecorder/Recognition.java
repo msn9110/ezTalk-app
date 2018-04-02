@@ -3,6 +3,7 @@ package com.example.hhs.wavrecorder;
 import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
+import android.os.Handler;
 import android.widget.Toast;
 
 import org.apache.http.HttpEntity;
@@ -21,19 +22,23 @@ import java.io.UnsupportedEncodingException;
 import static com.example.hhs.wavrecorder.MyReceiver.RECOGNITION_FINISHED_ACTION;
 
 
-public class Recogntion extends AsyncTask<Void, Void, String> {
+public class Recognition extends Thread {
 
     private String mFilename;
     private String mLabel;
     private Context mContext;
+    private Handler mHandler;
 
-    public Recogntion(Context context, String filename, String label) {
+    public Recognition(Context context, String filename, String label, Handler uiHandler) {
         mContext = context;
         mFilename = filename;
         mLabel = label;
+        mHandler = uiHandler;
     }
+
     @Override
-    protected String doInBackground(Void... voids) {
+    public void run() {
+        super.run();
         String result = "";
         String host = "120.126.145.113";
         String port = ":5000";
@@ -67,11 +72,17 @@ public class Recogntion extends AsyncTask<Void, Void, String> {
             result = "POST Error";
         }
 
-        return result;
+        onPostExecute(result);
     }
-    @Override
-    protected void onPostExecute(String s) {
-    if (s.length() > 0)   Toast.makeText(mContext, s, Toast.LENGTH_LONG).show();
+
+    private void onPostExecute(final String s) {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (s.length() >= 0)   Toast.makeText(mContext, s, Toast.LENGTH_LONG).show();
+            }
+        });
+
     }
 
     private String getJSONString(HttpEntity httpEntity) throws IOException {
