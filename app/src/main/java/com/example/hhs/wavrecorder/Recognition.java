@@ -39,7 +39,7 @@ public class Recognition extends Thread {
     @Override
     public void run() {
         super.run();
-        String result = "";
+        String result = "辨識完成";
         String host = "120.126.145.113";
         String port = ":5000";
         String apiName = "/recognize";
@@ -79,7 +79,7 @@ public class Recognition extends Thread {
         mHandler.post(new Runnable() {
             @Override
             public void run() {
-                if (s.length() > 0)   Toast.makeText(mContext, s, Toast.LENGTH_LONG).show();
+                Toast.makeText(mContext, s, Toast.LENGTH_LONG).show();
             }
         });
 
