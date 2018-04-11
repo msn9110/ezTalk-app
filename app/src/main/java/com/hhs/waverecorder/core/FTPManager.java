@@ -1,6 +1,5 @@
-package com.example.hhs.wavrecorder;
+package com.hhs.waverecorder.core;
 
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Handler;

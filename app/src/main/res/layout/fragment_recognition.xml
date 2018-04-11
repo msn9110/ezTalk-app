@@ -3,13 +3,18 @@
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <EditText
+    <com.hhs.waverecorder.widget.MyText
         android:id="@+id/txtMsg"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textSize="35sp"
-        android:text="Text" />
+        android:text="" />
+    <Spinner
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:id="@+id/pronouceSpinner">
 
+    </Spinner>
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"

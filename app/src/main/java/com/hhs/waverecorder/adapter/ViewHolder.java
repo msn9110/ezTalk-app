@@ -1,9 +1,9 @@
-package com.example.hhs.wavrecorder;
+package com.hhs.waverecorder.adapter;
 
 import android.widget.RadioButton;
 import android.widget.TextView;
 
 public class ViewHolder{
-    TextView name;
-    RadioButton select;
+    public TextView name;
+    public RadioButton select;
 }

@@ -1,4 +1,4 @@
-package com.example.hhs.wavrecorder;
+package com.hhs.waverecorder;
 
 import android.Manifest;
 import android.content.Context;
@@ -20,6 +20,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
+import com.hhs.waverecorder.receiver.MyReceiver;
+import com.example.hhs.wavrecorder.R;
+import com.hhs.waverecorder.adapter.MyAdapter;
+import com.hhs.waverecorder.adapter.ViewHolder;
+import com.hhs.waverecorder.core.FTPManager;
+import com.hhs.waverecorder.core.WAVRecorder;
+import com.hhs.waverecorder.listener.MyListener;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -35,8 +43,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-import static com.example.hhs.wavrecorder.MyReceiver.RECOGNITION_FINISHED_ACTION;
-import static com.example.hhs.wavrecorder.MyReceiver.RECORD_FINISHED_ACTION;
+import static com.hhs.waverecorder.receiver.MyReceiver.RECOGNITION_FINISHED_ACTION;
+import static com.hhs.waverecorder.receiver.MyReceiver.RECORD_FINISHED_ACTION;
 
 public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener,
         MyListener

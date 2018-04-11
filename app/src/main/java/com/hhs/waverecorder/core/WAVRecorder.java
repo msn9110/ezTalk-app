@@ -1,4 +1,4 @@
-package com.example.hhs.wavrecorder;
+package com.hhs.waverecorder.core;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -14,7 +14,7 @@ import android.media.MediaRecorder;
 import android.media.MediaScannerConnection;
 import android.os.Environment;
 
-import static com.example.hhs.wavrecorder.MyReceiver.RECORD_FINISHED_ACTION;
+import static com.hhs.waverecorder.receiver.MyReceiver.RECORD_FINISHED_ACTION;
 
 public class WAVRecorder {
     private Context mContext;

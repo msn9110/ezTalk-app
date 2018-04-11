@@ -1,4 +1,4 @@
-package com.example.hhs.wavrecorder;
+package com.hhs.waverecorder;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
@@ -9,6 +9,9 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
+
+import com.example.hhs.wavrecorder.R;
+import com.hhs.waverecorder.fragment.RecognitionFragment;
 
 
 public class Main extends AppCompatActivity {

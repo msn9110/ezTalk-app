@@ -1,8 +1,10 @@
-package com.example.hhs.wavrecorder;
+package com.hhs.waverecorder.receiver;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+
+import com.hhs.waverecorder.listener.MyListener;
 
 public class MyReceiver extends BroadcastReceiver {
 

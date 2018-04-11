@@ -1,8 +1,7 @@
-package com.example.hhs.wavrecorder;
+package com.hhs.waverecorder.core;
 
 import android.content.Context;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Handler;
 import android.widget.Toast;
 
@@ -19,7 +18,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 
-import static com.example.hhs.wavrecorder.MyReceiver.RECOGNITION_FINISHED_ACTION;
+import static com.hhs.waverecorder.receiver.MyReceiver.RECOGNITION_FINISHED_ACTION;
 
 
 public class Recognition extends Thread {
