@@ -25,8 +25,9 @@ public class MyText extends android.support.v7.widget.AppCompatEditText {
     @Override
     protected void onSelectionChanged(int selStart, int selEnd) {
         super.onSelectionChanged(selStart, selEnd);
-        int pos = (selEnd - 1 >= 0) ? selEnd - 1 : 0;
-        if (listener != null)
-            listener.onCursorChanged(pos);
+        if (selStart == selEnd) {
+            if (listener != null)
+                listener.onCursorChanged(this);
+        }
     }
 }

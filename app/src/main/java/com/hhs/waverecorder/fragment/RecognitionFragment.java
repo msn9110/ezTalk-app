@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -43,6 +44,7 @@ import static com.hhs.waverecorder.receiver.MyReceiver.RECORD_FINISHED_ACTION;
 public class RecognitionFragment extends Fragment implements AdapterView.OnItemSelectedListener,
         AdapterView.OnItemClickListener, MyListener, CursorChangedListener {
 
+    private final String TAG = "## " + getClass().getName();
     //Fragment Variable
     Context mContext;
     View mView;
@@ -55,10 +57,11 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     Spinner resultSpinner, pronounceSpinner;
     ListView lvWords, lvFunction;
     MyText txtMsg;
-    ArrayList<String> pronounceList = new ArrayList<>();
-    ArrayList<String> wordList = new ArrayList<>();
-    ArrayList<String> labelList = new ArrayList<>();
-    ArrayList<String> noToneLabelList = new ArrayList<>();
+    ArrayList<String> pronounceList = new ArrayList<>(); // to store recognition zhuyin without tone
+    ArrayList<String> wordList = new ArrayList<>(); // to show all possible chinese word according to selected no tone zhuyin
+    ArrayList<String> displayLabelList = new ArrayList<>(); // to show all zhuyin with tone of the first chinese word behind cursor
+    ArrayList<String> myLabelList = new ArrayList<>(); // store the choice for displayLabelList
+    ArrayList<String> noToneLabelList = new ArrayList<>(); // store choice for pronounceList
     ArrayList<String> waveFiles = new ArrayList<>();
     ArrayAdapter<String> ad2, ad3, ad4;
 
@@ -82,6 +85,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
         // For ListView or Spinner
         pronounceList.add("-");
+        pronounceList.add("ㄧ");
         pronounceList.add("ㄨㄛ");
         pronounceList.add("ㄋㄧ");
         ArrayList<String> fList = new ArrayList<>(Arrays.asList("錄音", "talk", "刪除"));
@@ -100,8 +104,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         resultSpinner.setOnItemSelectedListener(this);
         resultSpinner.setSelection(0);
 
-        labelList.add("-");
-        ad4 = new ArrayAdapter<>(mContext, R.layout.myspinner, labelList);
+        displayLabelList.add("-");
+        ad4 = new ArrayAdapter<>(mContext, R.layout.myspinner, displayLabelList);
         pronounceSpinner.setAdapter(ad4);
         ad4.setDropDownViewResource(R.layout.myspinner);
         pronounceSpinner.setOnItemSelectedListener(this);
@@ -156,28 +160,41 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         return new JSONObject(jsonStr);
     }
 
+    // detect the pronounce of the word in front of the cursor
     @Override
-    public void onCursorChanged(int position) {
-        String character = txtMsg.getText().toString().substring(position, position + 1);
-        labelList.clear();
-        labelList.add("-");
-        int selectedIndex = 0;
-        try {
-            JSONArray jsonArray = czTable.getJSONArray(character);
-            String noToneLabel = noToneLabelList.get(position);
-            for (int i = 0; i < jsonArray.length(); i++) {
-                String label = jsonArray.getString(i);
-                labelList.add(label);
-                if (label.startsWith(noToneLabel) && selectedIndex == 0) {
-                    selectedIndex = i + 1;
+    public void onCursorChanged(View view) {
+        switch (view.getId()) {
+            case R.id.txtMsg:
+                int position = txtMsg.getSelectionStart();
+                String msg = txtMsg.getText().toString();
+                String character = (position - 1 < 0) ? "" : msg.substring(position - 1, position);
+                displayLabelList.clear();
+                displayLabelList.add("-");
+                int selectedIndex = 0;
+                if (character.length() > 0) {
+                    Log.d(TAG, character);
+                    try {
+                        JSONArray jsonArray = czTable.getJSONArray(character);
+                        String myLabel = (position > myLabelList.size()) ? noToneLabelList.get(position - 1)
+                                                                            : myLabelList.get(position - 1);
+                        for (int i = 0; i < jsonArray.length(); i++) {
+                            String label = jsonArray.getString(i);
+                            displayLabelList.add(label);
+                            if (label.startsWith(myLabel) && selectedIndex == 0) {
+                                selectedIndex = i + 1;
+                            }
+                        }
+                        if (selectedIndex == 0)
+                            selectedIndex = 1;
+                    } catch (JSONException e) {
+                        Log.w(TAG, "onCursorChanged", e);
+                    }
                 }
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
+
+                ad4.notifyDataSetChanged();
+                pronounceSpinner.setSelection(selectedIndex);
+                break;
         }
-        ad4.notifyDataSetChanged();
-        pronounceSpinner.setSelection(selectedIndex);
-        System.out.println(character);
     }
 
     @Override
@@ -209,10 +226,10 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                  if (position == 0)
                      break;
 
-                 if (msgPos >= labelList.size() - 1) {
-                     labelList.add(select);
+                 if (msgPos >= myLabelList.size()) {
+                     myLabelList.add(select);
                  } else {
-                     labelList.set(msgPos, select);
+                     myLabelList.set(msgPos - 1, select);
                  }
                  break;
          }
@@ -262,13 +279,14 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
                         break;
                     case "刪除":
-                        labelList.clear();;
+                        displayLabelList.clear();
                         waveFiles.clear();
                         wordList.clear();
                         pronounceList.clear();
+                        myLabelList.clear();
                         noToneLabelList.clear();
                         pronounceList.add("-");
-                        labelList.add("-");
+                        displayLabelList.add("-");
                         ad2.notifyDataSetChanged();
                         ad3.notifyDataSetChanged();
                         ad4.notifyDataSetChanged();
@@ -280,16 +298,17 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 break;
             case R.id.wordsList:
                 int msgPos = txtMsg.getSelectionStart();
+                System.out.println(msgPos);
                 String noToneLabel = ((TextView) resultSpinner.getSelectedView()).getText().toString();
-                if (msgPos >= labelList.size() - 1) {
+                if (msgPos >= noToneLabelList.size()) {
                     noToneLabelList.add(noToneLabel);
                 } else {
-                    noToneLabelList.set(msgPos, noToneLabel);
+                    noToneLabelList.set(msgPos - 1, noToneLabel);
                 }
                 String msg = txtMsg.getText().toString();
                 String part1 = msg.substring(0, msgPos);
-                String part2 = msg.substring(msgPos, msg.length());
-                String text = part1 + select + part2;
+                String part2 = (msgPos + 1 > msg.length()) ? "" : msg.substring(msgPos + 1, msg.length());
+                String text = part1 + select + part2; // modify the word behind cursor
                 txtMsg.setText(text);
                 txtMsg.setSelection(part1.length() + select.length());
                 break;
