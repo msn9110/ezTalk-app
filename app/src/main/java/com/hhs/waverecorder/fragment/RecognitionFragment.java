@@ -2,6 +2,7 @@ package com.hhs.waverecorder.fragment;
 
 import android.content.Context;
 import android.content.IntentFilter;
+import android.media.MediaScannerConnection;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
@@ -17,6 +18,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.example.hhs.wavrecorder.R;
+import com.hhs.waverecorder.core.Recognition;
 import com.hhs.waverecorder.core.WAVRecorder;
 import com.hhs.waverecorder.listener.CursorChangedListener;
 import com.hhs.waverecorder.listener.MyListener;
@@ -28,6 +30,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -160,6 +163,23 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         return new JSONObject(jsonStr);
     }
 
+    private void clear() {
+        displayLabelList.clear();
+        waveFiles.clear();
+        wordList.clear();
+        pronounceList.clear();
+        myLabelList.clear();
+        noToneLabelList.clear();
+        pronounceList.add("-");
+        displayLabelList.add("-");
+        ad2.notifyDataSetChanged();
+        ad3.notifyDataSetChanged();
+        ad4.notifyDataSetChanged();
+        pronounceSpinner.setSelection(0);
+        resultSpinner.setSelection(0);
+        txtMsg.setText("");
+    }
+
     // detect the pronounce of the word in front of the cursor
     @Override
     public void onCursorChanged(View view) {
@@ -279,20 +299,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
                         break;
                     case "刪除":
-                        displayLabelList.clear();
-                        waveFiles.clear();
-                        wordList.clear();
-                        pronounceList.clear();
-                        myLabelList.clear();
-                        noToneLabelList.clear();
-                        pronounceList.add("-");
-                        displayLabelList.add("-");
-                        ad2.notifyDataSetChanged();
-                        ad3.notifyDataSetChanged();
-                        ad4.notifyDataSetChanged();
-                        pronounceSpinner.setSelection(0);
-                        resultSpinner.setSelection(0);
-                        txtMsg.setText("");
+                        clear();
                         break;
                 }
                 break;
@@ -318,6 +325,9 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     @Override
     public void onFinishRecord(String path) {
         waveFiles.add(txtMsg.getSelectionStart(), path);
+        File file = new File(path);
+        MediaScannerConnection.scanFile(mContext, new String[] {file.getAbsolutePath()}, null, null);
+        new Recognition(mContext, path, mUIHandler).start();
     }
 
     @Override

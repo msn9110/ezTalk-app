@@ -11,27 +11,30 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONArray;
+import org.json.JSONException;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 
 import static com.hhs.waverecorder.receiver.MyReceiver.RECOGNITION_FINISHED_ACTION;
 
 
 public class Recognition extends Thread {
 
-    private String mFilename;
-    private String mLabel;
+    private File mFile;
     private Context mContext;
     private Handler mHandler;
 
-    public Recognition(Context context, String filename, String label, Handler uiHandler) {
+    public Recognition(Context context, String path, Handler uiHandler) {
         mContext = context;
-        mFilename = filename;
-        mLabel = label;
+        mFile = new File(path);
         mHandler = uiHandler;
     }
 
@@ -41,11 +44,18 @@ public class Recognition extends Thread {
         String result = "辨識完成";
         String host = "120.126.145.113";
         String port = ":5000";
-        String apiName = "/recognize";
+        String apiName = "/speech_recognition";
         String url = "http://" + host + port + apiName;
-
-        String json = "{\"data\":{\"label\":\"" + mLabel +"\", \"filename\":\"" + mFilename + "\"}}";
         try {
+            byte[] raws = new byte[(int)mFile.length()];
+            FileInputStream in = new FileInputStream(mFile);
+            in.read(raws);
+            int[] raw = new int[raws.length];
+            for (int i = 0; i < raws.length; i++)
+                raw[i] = 0xff & raws[i];
+            JSONArray rawData = new JSONArray(Arrays.asList(raw));
+            String json = "{\"data\":{\"filename\":\"" + mFile.getName() + "\", \"raw\":"
+                            + rawData.getJSONArray(0).toString() + "}}";
             StringEntity s = new StringEntity(json, "UTF-8");
             //s.setContentEncoding("UTF-8");
             //s.setContentType("application/json");
@@ -61,7 +71,6 @@ public class Recognition extends Thread {
             String myResult = getJSONString(httpEntity);
             Intent intent = new Intent(RECOGNITION_FINISHED_ACTION);
             intent.putExtra("response", myResult);
-            intent.putExtra("label", mLabel);
             mContext.sendBroadcast(intent);
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
@@ -69,6 +78,8 @@ public class Recognition extends Thread {
         } catch (IOException e) {
             e.printStackTrace();
             result = "POST Error";
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
 
         onPostExecute(result);
