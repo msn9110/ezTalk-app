@@ -168,7 +168,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         mContext = getActivity();
         eventReceiver.setOnListener(this);
         try {
-            InputStream dictStream = mContext.getAssets().open("pronounces_to_words.json");
+            InputStream dictStream = mContext.getAssets().open("PronounceToWord_noTone.json");
             myDict = readJSONStream(dictStream);
             czTable = readJSONStream(mContext.getAssets().open("myDic.json"));
         } catch (IOException | JSONException e) {
@@ -468,8 +468,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 String text = part1 + select + part2; // modify the word behind cursor
                 txtMsg.setText(text); // will trigger STEP 6 TextWatcher
                 txtMsg.setSelection(part1.length() + select.length()); // trigger onCursorChanged event
-                System.out.println(500+txtMsg.getSelectionStart());
-
                 break;
         }
     }
