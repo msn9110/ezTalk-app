@@ -84,7 +84,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
     //State Variable
     private boolean isRecord = false;
-    private boolean isRecordingInput = false;
+    private boolean isVoiceInput = false;
     private boolean txtClear = false;
 
     private void initUI() {
@@ -117,58 +117,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         // For EditText or TextView
         txtMsg.setText("");
         txtMsg.setOnCursorChangedListener(this);
-        txtMsg.addTextChangedListener(new TextWatcher() {
-            int originLength;
-            int pos;
-            @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                originLength = txtMsg.getText().toString().length();
-                pos = txtMsg.getSelectionStart();
-            }
-
-            @Override
-            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
-            }
-
-            @Override
-            public void afterTextChanged(Editable editable) {
-                int currentLength = txtMsg.getText().toString().length();
-                int currentPos = txtMsg.getSelectionStart();
-                if (!txtClear && currentPos == txtMsg.getSelectionEnd()) { // confirm not clear by functionList and not used select to delete
-                    if (currentLength > originLength) { // insert mode
-                        if (!isRecordingInput) {
-                           String addedText = txtMsg.getText().toString().substring(pos, currentPos);
-                           for (int i = pos; pos < currentPos; i++) {
-                               String ch = addedText.substring(i - pos, i - pos + 1);
-                               waveFiles.add(i, "");
-                               // avoid no mapping in czTable
-                               noToneLabelList.add(i, "unknown");
-                               myLabelList.add(i, "unknown");
-                               try {
-                                   ArrayList<String> candidate = lookCZTable(ch);
-                                   if (candidate.size() > 0) {
-                                       String myLabel = candidate.get(i);
-                                       noToneLabelList.set(i, myLabel.replaceAll("[˙ˊˇˋ]$", ""));
-                                       myLabelList.set(i, myLabel);
-                                   }
-                               } catch (JSONException e) {
-                                   Log.w(TAG, "noMappingIn czTable");
-                               }
-                           }
-                        }
-                    } else if (currentLength < originLength) { // delete mode
-                        for (int i = currentPos - 1; i >= pos; i--) {
-                            waveFiles.remove(i);
-                            myLabelList.remove(i);
-                            noToneLabelList.remove(i);
-                        }
-                    }
-                }
-                txtClear = false;
-                System.out.println(6);
-            }
-        });
+        txtMsg.addTextChangedListener(textWatcher);
 
         // For ListView or Spinner
         recognitionList.add("-");
@@ -264,7 +213,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     // find pronounce of chinese word
     private ArrayList<String> lookCZTable(String word) throws JSONException {
         ArrayList<String> candidate = new ArrayList<>();
-        JSONArray jsonArray = czTable.getJSONObject("pronounces").getJSONArray(word);
+        JSONArray jsonArray = czTable.getJSONObject(word).getJSONArray("pronounces");
         for (int i = 0; i < jsonArray.length(); i++) {
             candidate.add(jsonArray.getJSONObject(i).keys().next());
         }
@@ -320,19 +269,71 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     }
 
     //====================UI Listener Start====================
+    // ###STEP 6###
+    TextWatcher textWatcher = new TextWatcher() {
+        int originLength;
+        int pos;
+        @Override
+        public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            originLength = txtMsg.getText().toString().length();
+            pos = txtMsg.getSelectionStart();
+        }
+
+        @Override
+        public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+        }
+
+        @Override
+        public void afterTextChanged(Editable editable) {
+            int currentLength = txtMsg.getText().toString().length();
+            int currentPos = txtMsg.getSelectionStart();
+            if (!txtClear && currentPos == txtMsg.getSelectionEnd()) { // confirm not clear by functionList and not used select to delete
+                if (currentLength > originLength) { // insert mode
+                    if (!isVoiceInput) {
+                        String addedText = txtMsg.getText().toString().substring(pos, currentPos);
+                        for (int i = pos; pos < currentPos; i++) {
+                            String ch = addedText.substring(i - pos, i - pos + 1);
+                            waveFiles.add(i, "");
+                            // avoid no mapping in czTable
+                            noToneLabelList.add(i, "unknown");
+                            myLabelList.add(i, "unknown");
+                            try {
+                                ArrayList<String> candidate = lookCZTable(ch);
+                                if (candidate.size() > 0) {
+                                    String myLabel = candidate.get(i);
+                                    noToneLabelList.set(i, myLabel.replaceAll("[˙ˊˇˋ]$", ""));
+                                    myLabelList.set(i, myLabel);
+                                }
+                            } catch (JSONException e) {
+                                Log.w(TAG, "no Mapping In czTable");
+                            }
+                        }
+                    }
+                } else if (currentLength < originLength) { // delete mode
+                    for (int i = currentPos - 1; i >= pos; i--) {
+                        waveFiles.remove(i);
+                        myLabelList.remove(i);
+                        noToneLabelList.remove(i);
+                    }
+                }
+            }
+            txtClear = false;
+        }
+    };
+
     // detect the pronounce of the word in front of the cursor
     @Override
     public void onCursorChanged(View view) {
         switch (view.getId()) {
-            case R.id.txtMsg:
-                System.out.println(7);
+            case R.id.txtMsg: // ###STEP 7###
                 int position = txtMsg.getSelectionStart();
                 String msg = txtMsg.getText().toString();
                 String character = (position - 1 < 0) ? "" : msg.substring(position - 1, position);
                 displayLabelList.clear();
                 displayLabelList.add("-");
                 int selectedIndex = 0;
-                if (character.length() > 0) {
+                if (position > 0) {
                     Log.d(TAG, character);
                     try {
                         ArrayList<String> candidate = lookCZTable(character);
@@ -348,7 +349,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                         if (candidate.size() > 0 && selectedIndex == 0)
                             selectedIndex = 1;
                     } catch (JSONException e) {
-                        Log.w(TAG, "onCursorChanged", e);
+                        Log.w(TAG, "onCursorChanged");
                     }
                 }
 
@@ -386,7 +387,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                  break;
 
              case R.id.pronouceSpinner: // ###STEP 8###
-                 System.out.println(8);
                  if (position == 0) // ###STEP 8-1###
                      break;
 
@@ -394,9 +394,13 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                  // ###STEP 8-1###
                  if (msgPos >= myLabelList.size()) {
                      myLabelList.add(select);
+                 } else if (isVoiceInput) {
+                     myLabelList.add(msgPos, select);
                  } else {
                      myLabelList.set(msgPos, select);
                  }
+
+                 onFinishAllStep();
                  break;
          }
      }
@@ -462,8 +466,10 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 String part1 = msg.substring(0, msgPos);
                 String part2 = (msgPos + 1 > msg.length()) ? "" : msg.substring(msgPos + 1, msg.length());
                 String text = part1 + select + part2; // modify the word behind cursor
-                txtMsg.setText(text);
-                txtMsg.setSelection(part1.length() + select.length());
+                txtMsg.setText(text); // will trigger STEP 6 TextWatcher
+                txtMsg.setSelection(part1.length() + select.length()); // trigger onCursorChanged event
+                System.out.println(500+txtMsg.getSelectionStart());
+
                 break;
         }
     }
@@ -474,7 +480,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     @Override
     public void onFinishRecord(String path) {
         popupWindow.dismiss();
-        isRecordingInput = true;
+        isVoiceInput = true;
         waveFiles.add(txtMsg.getSelectionStart(), path);
         File file = new File(path);
         MediaScannerConnection.scanFile(mContext, new String[] {file.getAbsolutePath()}, null, null);
@@ -509,6 +515,13 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
             }
         } catch (JSONException e) {
             e.printStackTrace();
+        }
+    }
+
+    // ###STEP 9###
+    private void onFinishAllStep() {
+        if (isVoiceInput) {
+            isVoiceInput = false;
         }
     }
 }
