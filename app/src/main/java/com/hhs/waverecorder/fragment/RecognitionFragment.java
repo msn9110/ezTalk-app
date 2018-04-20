@@ -31,6 +31,7 @@ import com.hhs.waverecorder.core.WAVRecorder;
 import com.hhs.waverecorder.listener.CursorChangedListener;
 import com.hhs.waverecorder.listener.MyListener;
 import com.hhs.waverecorder.receiver.MyReceiver;
+import com.hhs.waverecorder.utils.MyFile;
 import com.hhs.waverecorder.widget.MyText;
 
 import org.json.JSONArray;
@@ -39,13 +40,18 @@ import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 
 import static com.hhs.waverecorder.receiver.MyReceiver.RECOGNITION_FINISHED_ACTION;
@@ -56,6 +62,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         AdapterView.OnItemClickListener, MyListener, CursorChangedListener {
 
     private final String TAG = "## " + getClass().getName();
+    private final static String CZTABLE = "czTable.json";
+    private final static String ZCTABLE = "zcTable_noTone.json";
     //Fragment Variable
     Context mContext;
     View mView;
@@ -79,7 +87,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     ArrayAdapter<String> ad2, ad3, ad4;
 
     //Global Data
-    JSONObject myDict, czTable/*chineseToZhuyin*/;
+    JSONObject zcTable, czTable/*chineseToZhuyin*/;
     int width, height; // device resolution in pixels used for UI
 
     //State Variable
@@ -167,13 +175,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         super.onCreate(savedInstanceState);
         mContext = getActivity();
         eventReceiver.setOnListener(this);
-        try {
-            InputStream dictStream = mContext.getAssets().open("PronounceToWord_noTone.json");
-            myDict = readJSONStream(dictStream);
-            czTable = readJSONStream(mContext.getAssets().open("myDic.json"));
-        } catch (IOException | JSONException e) {
-            e.printStackTrace();
-        }
     }
 
     @Nullable
@@ -191,14 +192,94 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         intentFilter.addAction(RECORD_FINISHED_ACTION);
         intentFilter.addAction(RECOGNITION_FINISHED_ACTION);
         mContext.registerReceiver(eventReceiver, intentFilter);
+        readTable();
     }
 
     @Override
     public void onStop() {
         super.onStop();
         mContext.unregisterReceiver(eventReceiver);
+        storeTable();
     }
 
+    // read two tables
+    private void readTable() {
+        try {
+            File pronounceToWord = new File(mContext.getFilesDir(), ZCTABLE);
+            InputStream dictStream;
+            if (pronounceToWord.exists())
+                dictStream = mContext.openFileInput(ZCTABLE);
+            else
+                dictStream = mContext.getAssets().open(ZCTABLE);
+            zcTable = readJSONStream(dictStream);
+            File myDic = new File(mContext.getFilesDir(), CZTABLE);
+            if (myDic.exists())
+                dictStream = mContext.openFileInput(CZTABLE);
+            else
+                dictStream = mContext.getAssets().open(CZTABLE);
+            czTable = readJSONStream(dictStream);
+            sortTables();
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // store ZCTABLE CZTABLE
+    private void storeTable() {
+        if (zcTable != null) {
+            String outStr = zcTable.toString().replaceAll("(\\},)", "$0\n");
+            MyFile.writeStringToFile(outStr, new File(mContext.getFilesDir(), ZCTABLE));
+        }
+
+        if (czTable != null) {
+            String outStr = czTable.toString().replaceAll("(\\],)", "$0\n");
+            MyFile.writeStringToFile(outStr, new File(mContext.getFilesDir(), CZTABLE));
+        }
+    }
+
+    private void sortTables() throws JSONException {
+        for (Iterator<String> it = zcTable.keys(); it.hasNext();) {
+            String key = it.next();
+            JSONObject item = zcTable.getJSONObject(key);
+            zcTable.put(key, item.put("pronounces",
+                    sortJSONArrayByCount(item.getJSONArray("pronounces"), false)));
+        }
+        for (Iterator<String> it = czTable.keys(); it.hasNext();) {
+            String key = it.next();
+            czTable.put(key, sortJSONArrayByCount(czTable.getJSONArray(key), false));
+        }
+    }
+
+    public static JSONArray sortJSONArrayByCount(JSONArray jsonArray, final boolean ascending) throws JSONException {
+        List<JSONObject> array = new ArrayList<>();
+        for (int i = 0; i < jsonArray.length(); i++)
+            array.add(jsonArray.getJSONObject(i));
+        Collections.sort(array, new Comparator<JSONObject>() {
+            @Override
+            public int compare(JSONObject a, JSONObject b) {
+                String keyA = a.keys().next(), keyB = b.keys().next();
+                try {
+                    Integer valA = a.getInt(keyA);
+                    Integer valB = b.getInt(keyB);
+                    if (ascending)
+                        return valA.compareTo(valB);
+                    else
+                        return -valA.compareTo(valB);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                return 0;
+            }
+        });
+        String jsonArrStr = "[";
+        for (JSONObject json:array) {
+            jsonArrStr += json.toString() + ",";
+        }
+        jsonArrStr = jsonArrStr.replaceAll(",$", "]");
+        return new JSONArray(jsonArrStr);
+    }
+
+    // read JSON FileStream
     private JSONObject readJSONStream(InputStream inputStream) throws IOException, JSONException {
         BufferedReader myReader = new BufferedReader(new InputStreamReader(inputStream));
         StringBuilder sb = new StringBuilder();
@@ -208,6 +289,79 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         }
         String jsonStr = sb.toString();
         return new JSONObject(jsonStr);
+    }
+
+    // update word frequency
+    private void updateFrequency() throws JSONException {
+        String msg = txtMsg.getText().toString();
+        for (int i = 0; i < myLabelList.size(); i++) {
+            // start to update czTable
+            String word = msg.substring(i, i + 1);
+            String myLabel = myLabelList.get(i);
+            JSONObject item = czTable.getJSONObject(word);
+            int count = item.getInt("count") + 1;
+            item.put("count", count);
+            item = updateOAO(word, myLabel, item, "pronounces");
+            czTable.put(word, item);
+            // end of update czTable
+
+            // start to update myDic
+            String noToneLabel = myLabel.replaceAll("[˙ˊˇˋ]", "");
+            zcTable = updateOAO(noToneLabel, myLabel, zcTable, noToneLabel);
+            // end of update myDic
+        }
+    }
+
+    // update the count of an object in array of an object
+    private JSONObject updateOAO(String key1, String key2, JSONObject item, String strIndex) throws JSONException {
+        int count;
+        JSONArray itemJSONArray = item.getJSONArray(strIndex);
+        JSONObject changedItem = new JSONObject("{\"" + key2 + "\" : 1}"); // default value of array
+        int index = itemJSONArray.length(); // default index of array
+        for (int j = 0; j < index; j++) {
+            JSONObject find = itemJSONArray.getJSONObject(j);
+            if (key2.contentEquals(find.keys().next())) {
+                count = find.getInt(key2) + 1;
+                changedItem = find.put(key2, count);
+                index = j;
+                break;
+            }
+        }
+        itemJSONArray.put(index, changedItem);
+        return item.put(key1, itemJSONArray);
+    }
+
+    private void talk() {
+        JSONObject packet = new JSONObject();
+        for (int i = 0; i < waveFiles.size(); i++) {
+            String sourcePath = waveFiles.get(i);
+            if (sourcePath.length() > 0) {
+                File file = new File(sourcePath);
+                String myLabel = myLabelList.get(i);
+                String noToneLabel = myLabel.replaceAll("[˙ˊˇˋ]", "");
+                String tone = String.valueOf(getTone(myLabel)) + '-';
+                String newPath = file.getParent() + "/" + noToneLabel + "/" + tone + file.getName();
+                MyFile.moveFile(sourcePath, newPath);
+                MediaScannerConnection.scanFile(mContext, new String[] {sourcePath, newPath}, null, null);
+                waveFiles.set(i, "");
+                JSONObject item = new JSONObject();
+                try {
+                    item.put("label", noToneLabel);
+                    item.put("oldName", file.getName());
+                    item.put("tone", tone);
+                    packet.put(String.valueOf(i), item);
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        try {
+            updateFrequency();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     // find pronounce of chinese word
@@ -372,7 +526,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                      break;
                  }
                  try {
-                     JSONArray jsonArray = myDict.getJSONArray(select);
+                     JSONArray jsonArray = zcTable.getJSONArray(select);
                      for (int i = 0; i < jsonArray.length(); i++) {
                          String key = jsonArray.getJSONObject(i).keys().next();
                          wordList.add(key);
@@ -446,7 +600,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
                         break;
                     case "talk":
-
+                        talk();
                         break;
                     case "刪除":
                         clear();
@@ -480,8 +634,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         popupWindow.dismiss();
         isVoiceInput = true;
         waveFiles.add(txtMsg.getSelectionStart(), path);
-        File file = new File(path);
-        MediaScannerConnection.scanFile(mContext, new String[] {file.getAbsolutePath()}, null, null);
         new Recognition(mContext, path, mUIHandler).start(); // ###STEP 2-1###
     }
 
