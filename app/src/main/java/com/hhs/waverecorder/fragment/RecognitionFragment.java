@@ -1,10 +1,12 @@
 package com.hhs.waverecorder.fragment;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.graphics.drawable.ColorDrawable;
 import android.media.MediaScannerConnection;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -24,9 +26,11 @@ import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.hhs.wavrecorder.R;
 import com.hhs.waverecorder.core.Recognition;
+import com.hhs.waverecorder.core.Updater;
 import com.hhs.waverecorder.core.WAVRecorder;
 import com.hhs.waverecorder.listener.CursorChangedListener;
 import com.hhs.waverecorder.listener.MyListener;
@@ -40,7 +44,6 @@ import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -57,7 +60,7 @@ import java.util.Locale;
 import static com.hhs.waverecorder.receiver.MyReceiver.RECOGNITION_FINISHED_ACTION;
 import static com.hhs.waverecorder.receiver.MyReceiver.RECORD_FINISHED_ACTION;
 
-
+@SuppressWarnings("all")
 public class RecognitionFragment extends Fragment implements AdapterView.OnItemSelectedListener,
         AdapterView.OnItemClickListener, MyListener, CursorChangedListener {
 
@@ -78,6 +81,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     MyText txtMsg;
     View recordingView;
     PopupWindow popupWindow;
+    ProgressDialog loadingPage;
     ArrayList<String> recognitionList = new ArrayList<>(); // to store recognition zhuyin without tone
     ArrayList<String> wordList = new ArrayList<>(); // to show all possible chinese word according to selected no tone zhuyin
     ArrayList<String> displayLabelList = new ArrayList<>(); // to show all zhuyin with tone of the first chinese word behind cursor
@@ -115,6 +119,12 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
             }
         });
         popupWindow.setBackgroundDrawable(new ColorDrawable(0x000000));
+
+        // loading page
+        loadingPage = new ProgressDialog(mContext);
+        loadingPage.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        loadingPage.setTitle("載入資料中");
+        loadingPage.setMessage("請稍候");
 
         spRecognition = mView.findViewById(R.id.resultSpinner);
         spMyLabel = mView.findViewById(R.id.pronouceSpinner);
@@ -237,17 +247,37 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         }
     }
 
-    private void sortTables() throws JSONException {
-        for (Iterator<String> it = zcTable.keys(); it.hasNext();) {
-            String key = it.next();
-            JSONObject item = zcTable.getJSONObject(key);
-            zcTable.put(key, item.put("pronounces",
-                    sortJSONArrayByCount(item.getJSONArray("pronounces"), false)));
-        }
-        for (Iterator<String> it = czTable.keys(); it.hasNext();) {
-            String key = it.next();
-            czTable.put(key, sortJSONArrayByCount(czTable.getJSONArray(key), false));
-        }
+    private void sortTables() {
+        loadingPage.show();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final long start = System.currentTimeMillis();
+                try {
+                    for (Iterator<String> it = czTable.keys(); it.hasNext();) {
+                        String key = it.next();
+                        JSONObject item = czTable.getJSONObject(key);
+                        czTable.put(key, item.put("pronounces",
+                                sortJSONArrayByCount(item.getJSONArray("pronounces"), false)));
+                    }
+                    for (Iterator<String> it = zcTable.keys(); it.hasNext();) {
+                        String key = it.next();
+                        zcTable.put(key, sortJSONArrayByCount(zcTable.getJSONArray(key), false));
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                } finally {
+                    mUIHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            loadingPage.dismiss();
+                            double duration = (double) (System.currentTimeMillis() - start) / 1000;
+                            Toast.makeText(mContext, "LoadingTime : " + String.valueOf(duration) + " sec", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+        }).start();
     }
 
     public static JSONArray sortJSONArrayByCount(JSONArray jsonArray, final boolean ascending) throws JSONException {
@@ -333,6 +363,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
     private void talk() {
         JSONObject packet = new JSONObject();
+        ArrayList<File> movedFiles = new ArrayList<>();
         for (int i = 0; i < waveFiles.size(); i++) {
             String sourcePath = waveFiles.get(i);
             if (sourcePath.length() > 0) {
@@ -340,14 +371,17 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 String myLabel = myLabelList.get(i);
                 String noToneLabel = myLabel.replaceAll("[˙ˊˇˋ]", "");
                 String tone = String.valueOf(getTone(myLabel)) + '-';
-                String newPath = file.getParent() + "/" + noToneLabel + "/" + tone + file.getName();
-                MyFile.moveFile(sourcePath, newPath);
+                String newPath = Environment.getExternalStoragePublicDirectory("MyRecorder")
+                        + "/" + noToneLabel + "/" + tone + file.getName();
+                if (MyFile.moveFile(sourcePath, newPath)) {
+                    movedFiles.add(new File(sourcePath));
+                }
                 MediaScannerConnection.scanFile(mContext, new String[] {sourcePath, newPath}, null, null);
                 waveFiles.set(i, "");
                 JSONObject item = new JSONObject();
                 try {
                     item.put("label", noToneLabel);
-                    item.put("oldName", file.getName());
+                    item.put("filename", file.getName());
                     item.put("tone", tone);
                     packet.put(String.valueOf(i), item);
 
@@ -355,6 +389,10 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                     e.printStackTrace();
                 }
             }
+        }
+        //// TODO: 2018/4/21 add control for local recognition
+        if (movedFiles.size() > 0) {
+            new Updater(mContext, packet, movedFiles).start();
         }
 
         try {
@@ -445,6 +483,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
             if (!txtClear && currentPos == txtMsg.getSelectionEnd()) { // confirm not clear by functionList and not used select to delete
                 if (currentLength > originLength) { // insert mode
                     if (!isVoiceInput) {
+                        //// FIXME: 2018/4/21
                         String addedText = txtMsg.getText().toString().substring(pos, currentPos);
                         for (int i = pos; pos < currentPos; i++) {
                             String ch = addedText.substring(i - pos, i - pos + 1);

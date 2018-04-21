@@ -54,7 +54,6 @@ public class MyFile {
 
     public static boolean copyFile(InputStream in, OutputStream out) {
 
-        ;
         try {
 
             byte[] buffer = new byte[1024];
@@ -79,8 +78,8 @@ public class MyFile {
             FileOutputStream outputStream = new FileOutputStream(file);
             BufferedWriter myWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
             myWriter.write(content);
-            myWriter.close();
             myWriter.flush();
+            myWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

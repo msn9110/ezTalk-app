@@ -25,7 +25,7 @@ import java.util.Arrays;
 
 import static com.hhs.waverecorder.receiver.MyReceiver.RECOGNITION_FINISHED_ACTION;
 
-
+@SuppressWarnings("all")
 public class Recognition extends Thread {
 
     private File mFile;
@@ -95,7 +95,7 @@ public class Recognition extends Thread {
 
     }
 
-    private String getJSONString(HttpEntity httpEntity) throws IOException {
+    public static String getJSONString(HttpEntity httpEntity) throws IOException {
         InputStream is = httpEntity.getContent();
 
         BufferedReader bufReader = new BufferedReader(new InputStreamReader(is, "utf-8"), 8);
