@@ -513,9 +513,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 }
 
                 ad4.notifyDataSetChanged();
-                //// FIXME: 2018/4/22 
-                Log.d(TAG, "call1");
-                spMyLabel.setSelection(selectedIndex);
+                spMyLabel.setSelection(selectedIndex, true);
                 break;
         }
     }
@@ -548,10 +546,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                  break;
 
              case R.id.pronouceSpinner: // ###STEP 8###
-                 Log.d(TAG, "call8-0");
                  if (position == 0) // ###STEP 8-1###
                      break;
-                 Log.d(TAG, "call8-1");
                  int msgPos = txtMsg.getSelectionStart();
                  // ###STEP 8-1###
                  if (msgPos >= myLabelList.size()) {
@@ -559,7 +555,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                  } else if (isVoiceInput) {
                      myLabelList.add(msgPos, select);
                  } else {
-                     myLabelList.set(msgPos, select);
+                     myLabelList.set(msgPos - 1, select);
                  }
 
                  onFinishAllStep();
