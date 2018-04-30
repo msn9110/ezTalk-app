@@ -1,52 +1,81 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.hhs.waverecorder.widget.MyText
-        android:id="@+id/txtMsg"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="35sp"
-        android:text="" />
-    <Spinner
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:id="@+id/pronouceSpinner">
-
-    </Spinner>
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="horizontal">
+        android:orientation="vertical">
+
+        <com.hhs.waverecorder.widget.MyText
+            android:id="@+id/txtMsg"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="35sp"
+            android:text="" />
+        <Spinner
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:id="@+id/pronouceSpinner">
+
+        </Spinner>
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:layout_weight="1">
-            <Spinner
-                android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:id="@+id/resultSpinner">
-
-            </Spinner>
-            <ListView
+            android:orientation="horizontal"
+            android:baselineAligned="false">
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:id="@+id/wordsList">
-            </ListView>
-        </LinearLayout>
+                android:orientation="vertical"
+                android:layout_weight="1">
+                <Spinner
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:id="@+id/resultSpinner">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:layout_weight="1">
-            <ListView
+                </Spinner>
+                <ListView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:id="@+id/wordsList">
+                </ListView>
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:id="@+id/fuctionList">
-            </ListView>
+                android:orientation="vertical"
+                android:layout_weight="1">
+                <ListView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:id="@+id/fuctionList">
+                </ListView>
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
-</LinearLayout>
+
+    <FrameLayout
+        android:layout_width="228dp"
+        android:layout_height="228dp"
+        android:layout_gravity="center|bottom"
+        android:layout_marginBottom="16dp"
+        android:id="@+id/volume"
+        tools:background="#80808080">
+
+    </FrameLayout>
+    <ImageButton
+        android:id="@+id/btnRec"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/microphone"
+        android:layout_gravity="center|bottom"
+        android:background="@android:color/transparent"
+        android:layout_margin="66dp"
+        android:contentDescription="record" />
+</FrameLayout>

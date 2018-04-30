@@ -8,6 +8,7 @@ import android.media.MediaScannerConnection;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -22,6 +23,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.Spinner;
@@ -36,6 +39,7 @@ import com.hhs.waverecorder.listener.CursorChangedListener;
 import com.hhs.waverecorder.listener.MyListener;
 import com.hhs.waverecorder.receiver.MyReceiver;
 import com.hhs.waverecorder.utils.MyFile;
+import com.hhs.waverecorder.widget.VolumeCircle;
 import com.hhs.waverecorder.widget.MyText;
 
 import org.json.JSONArray;
@@ -61,7 +65,8 @@ import static com.hhs.waverecorder.receiver.MyReceiver.RECORD_FINISHED_ACTION;
 
 @SuppressWarnings("all")
 public class RecognitionFragment extends Fragment implements AdapterView.OnItemSelectedListener,
-        AdapterView.OnItemClickListener, MyListener, CursorChangedListener {
+        AdapterView.OnItemClickListener, View.OnClickListener,
+        MyListener, CursorChangedListener {
 
     private final String TAG = "## " + getClass().getName();
     private final static String CZTABLE = "czTable.json";
@@ -72,12 +77,26 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
     //Important Variable
     MyReceiver eventReceiver = new MyReceiver();
-    Handler mUIHandler = new Handler();
+    Handler mUIHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what) {
+                case 1:
+                    volView.removeAllViews();
+                    int level = msg.arg1;
+                    VolumeCircle circle = new VolumeCircle(mContext, level, dpi);
+                    volView.addView(circle);
+            }
+        }
+    };
 
     //UI Variable
     Spinner spRecognition, spMyLabel;
     ListView lvWords, lvFunction;
     MyText txtMsg;
+    ImageButton btnRec;
+    FrameLayout volView;
     View recordingView;
     PopupWindow popupWindow;
     ProgressDialog loadingPage;
@@ -91,7 +110,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
     //Global Data
     JSONObject zcTable, czTable/*chineseToZhuyin*/;
-    int width, height; // device resolution in pixels used for UI
+    int width, height, dpi; // device resolution in pixels used for UI
 
     //State Variable
     private boolean isRecord = false;
@@ -105,6 +124,9 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         getActivity().getWindowManager().getDefaultDisplay().getMetrics(dm);
         width = dm.widthPixels;
         height = dm.heightPixels;
+        dpi = dm.densityDpi;
+
+        volView = mView.findViewById(R.id.volume);
 
         // popup window
         LayoutInflater inflater = LayoutInflater.from(mContext);
@@ -130,6 +152,10 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         lvWords = mView.findViewById(R.id.wordsList);
         lvFunction = mView.findViewById(R.id.fuctionList);
         txtMsg = mView.findViewById(R.id.txtMsg);
+        btnRec = mView.findViewById(R.id.btnRec);
+
+        // For Button
+        btnRec.setOnClickListener(this);
 
         // For EditText or TextView
         txtMsg.setText("");
@@ -141,7 +167,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         recognitionList.add("ㄧ");
         recognitionList.add("ㄨㄛ");
         recognitionList.add("ㄋㄧ");
-        ArrayList<String> fList = new ArrayList<>(Arrays.asList("錄音", "talk", "刪除"));
+        ArrayList<String> fList = new ArrayList<>(Arrays.asList("talk", "刪除"));
 
         ArrayAdapter<String> ad1 = new ArrayAdapter<>(mContext, android.R.layout.simple_list_item_1, fList);
         lvFunction.setAdapter(ad1);
@@ -575,34 +601,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         switch (adapterView.getId()) {
             case R.id.fuctionList:
                 switch (select) {
-                    case "錄音":  // ###STEP 1###
-                        SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd-hhmmss", Locale.getDefault());
-                        final String path = "MyRecorder/tmp/" + df.format(new Date()) + ".wav";
-
-                        Thread recorder = new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                WAVRecorder wavRecorder = new WAVRecorder(path, mContext);
-                                Log.d(TAG, "Start Recording");
-                                wavRecorder.startRecording();
-                                try {
-                                    isRecord = true;
-                                    Thread.sleep(2500);
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                } finally {
-                                    wavRecorder.stopRecording();
-                                    isRecord = false;
-                                    Log.d(TAG, "Finish Recording!");
-                                }
-                            }
-                        });
-                        if (!isRecord) {
-                            popupWindow.showAtLocation(mView, Gravity.CENTER, width/8*2, height/8*2);
-                            recorder.start(); // ###STEP 1-1###
-                        }
-
-                        break;
                     case "talk":
                         //talk();
                         debug();
@@ -631,6 +629,41 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 break;
         }
     }
+
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.btnRec:
+                // ###STEP 1###
+                SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd-hhmmss", Locale.getDefault());
+                final String path = "MyRecorder/tmp/" + df.format(new Date()) + ".wav";
+
+                Thread recorder = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        WAVRecorder wavRecorder = new WAVRecorder(path, mContext, mUIHandler);
+                        Log.d(TAG, "Start Recording");
+                        wavRecorder.startRecording();
+                        try {
+                            isRecord = true;
+                            Thread.sleep(2500);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        } finally {
+                            wavRecorder.stopRecording();
+                            isRecord = false;
+                            Log.d(TAG, "Finish Recording!");
+                        }
+                    }
+                });
+                if (!isRecord) {
+                    //popupWindow.showAtLocation(mView, Gravity.CENTER, width/8*2, height/8*2);
+                    recorder.start(); // ###STEP 1-1###
+                }
+                break;
+        }
+    }
+
     //=====================UI Listener End=====================
 
     //====================Speech Recognition Listener====================
@@ -638,6 +671,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     @Override
     public void onFinishRecord(String path) {
         popupWindow.dismiss();
+        volView.removeAllViews();
         isVoiceInput = true;
         waveFiles.add(txtMsg.getSelectionStart(), path);
         new Recognition(mContext, path, mUIHandler).start(); // ###STEP 2-1###

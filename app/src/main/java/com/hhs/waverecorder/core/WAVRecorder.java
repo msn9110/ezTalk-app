@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 
 import android.content.Context;
 import android.content.Intent;
@@ -13,9 +14,12 @@ import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.media.MediaScannerConnection;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 
 import static com.hhs.waverecorder.receiver.MyReceiver.RECORD_FINISHED_ACTION;
 
+@SuppressWarnings("all")
 public class WAVRecorder {
     private Context mContext;
     private static final int RECORDER_BPP = 16;
@@ -24,24 +28,21 @@ public class WAVRecorder {
     private static final int RECORDER_SAMPLERATE = 16000;
     private static final int RECORDER_CHANNELS = AudioFormat.CHANNEL_IN_MONO;
     private static final int RECORDER_AUDIO_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
-    short[] audioData;
 
     private AudioRecord recorder = null;
     private int bufferSize = 0;
     private Thread recordingThread = null;
     private boolean isRecording = false;
-    int[] bufferData;
-    int bytesRecorded;
 
     private String output;
+    private Handler mUIHandler;
+    private double updateDuration = 1.0;
 
-    public WAVRecorder(String path, Context context) {
-        bufferSize = AudioRecord.getMinBufferSize(RECORDER_SAMPLERATE,
-                RECORDER_CHANNELS, RECORDER_AUDIO_ENCODING) * 3;
+    public WAVRecorder(String path, Context context, Handler handler) {
+        bufferSize = (int) (AudioRecord.getMinBufferSize(RECORDER_SAMPLERATE,
+                RECORDER_CHANNELS, RECORDER_AUDIO_ENCODING) * updateDuration * 3);
         this.mContext = context;
-
-        audioData = new short[bufferSize]; // short array that pcm data is put
-        // into.
+        mUIHandler = handler;
         output = Environment.getExternalStorageDirectory() + "/" + path;
 
     }
@@ -98,11 +99,33 @@ public class WAVRecorder {
             e.printStackTrace();
         }
 
-        int read = 0;
+        int read;
         if (null != os) {
+            Thread getMaxVolume = null;
             while (isRecording) {
                 read = recorder.read(data, 0, bufferSize);
-                if (read > 0) {
+
+                if (read > 0 && mUIHandler != null) {
+                    final byte[] copy = Arrays.copyOf(data, bufferSize);
+                    getMaxVolume = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            int max = 0;
+                            for (int i = 0; i < copy.length / 2; i++) {
+                                short num = (short) ((((short) copy[2 * i + 1]) & 0xff) << 8);
+                                num += ((short) copy[2 * i]) & 0xff;
+                                num = (num >= 0) ? num : (short) -num;
+                                if (num > max)
+                                    max = num;
+                            }
+                            final int level = max / 1638;
+                            Message msg = new Message();
+                            msg.what = 1; // volume level
+                            msg.arg1 = level;
+                            mUIHandler.sendMessage(msg);
+                        }
+                    });
+                    getMaxVolume.start();
                 }
 
                 if (AudioRecord.ERROR_INVALID_OPERATION != read) {
@@ -110,6 +133,13 @@ public class WAVRecorder {
                         os.write(data);
                     } catch (IOException e) {
                         e.printStackTrace();
+                    } finally {
+                        if (getMaxVolume != null)
+                            try {
+                                getMaxVolume.join();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
                     }
                 }
             }
@@ -118,6 +148,14 @@ public class WAVRecorder {
                 os.close();
             } catch (IOException e) {
                 e.printStackTrace();
+            }
+
+            if (getMaxVolume != null) {
+                try {
+                    getMaxVolume.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -152,13 +190,12 @@ public class WAVRecorder {
         File dir = new File(outFilename).getParentFile();
         if (!dir.exists())
             dir.mkdirs();
-        FileInputStream in = null;
-        FileOutputStream out = null;
+        FileInputStream in;
+        FileOutputStream out;
         long totalAudioLen = 0;
         long totalDataLen = totalAudioLen + 36;
         long longSampleRate = RECORDER_SAMPLERATE;
-        int channels = ((RECORDER_CHANNELS == AudioFormat.CHANNEL_IN_MONO) ? 1
-                : 2);
+        int channels = ((RECORDER_CHANNELS == AudioFormat.CHANNEL_IN_MONO) ? 1 : 2);
         long byteRate = RECORDER_BPP * RECORDER_SAMPLERATE * channels / 8;
 
         byte[] data = new byte[bufferSize];

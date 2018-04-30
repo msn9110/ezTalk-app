@@ -182,7 +182,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 Thread worker = new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        wavRecorder = new WAVRecorder(path, mContext);
+                        wavRecorder = new WAVRecorder(path, mContext, null);
                         System.out.println("Start Recording");
                         mHandler.post(new Runnable() {
                             @Override
