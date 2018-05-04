@@ -1,5 +1,6 @@
 package com.hhs.waverecorder.widget;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -21,6 +22,7 @@ public class VolumeCircle extends View {
         super(context);
     }
 
+    @SuppressLint("DrawAllocation")
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
@@ -28,9 +30,9 @@ public class VolumeCircle extends View {
         Paint pen = new Paint();
         pen.setStyle(Paint.Style.FILL);
         pen.setColor(Color.GRAY);
-        pen.setAlpha(128);
+        pen.setAlpha(64);
 
-        float x = (50 + 64) * scale;
+        float x = (55 + 64) * scale;
         float r = (34 + 4 * level) * scale;
 
         canvas.drawCircle(x, x, r, pen);

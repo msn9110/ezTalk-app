@@ -211,7 +211,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     private void startRecognition(File file) {
         Toast.makeText(mContext, "saved to : " + file.getAbsolutePath(), Toast.LENGTH_SHORT).show();
-        new FTPManager(mContext, file).execute();
+        total++;
+        txtAcc.setText(String.valueOf(total));
+        //new FTPManager(mContext, file).execute();
     }
 
     @Override

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_margin="20dp">
+
+        <com.hhs.waverecorder.widget.MyText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/txtMsg"
+            android:textAlignment="center"
+            android:textSize="50sp"
+            android:layout_margin="20dp"
+            tools:text="我"
+            />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="noToneLabel:"
+            android:textSize="45sp"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="5dp"/>
+        <Spinner
+            android:layout_width="match_parent"
+            android:layout_height="75dp"
+            android:id="@+id/spMyLabel">
+
+        </Spinner>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tone:"
+            android:textSize="45sp"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="5dp"/>
+        <Spinner
+            android:layout_width="match_parent"
+            android:layout_height="75dp"
+            android:id="@+id/spTone">
+
+        </Spinner>
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="20dp"
+            android:text="刪除前一個錄音"
+            android:textSize="50sp"
+            android:id="@+id/btnDel"/>
+
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="238dp"
+        android:layout_height="238dp"
+        android:layout_gravity="center|bottom"
+        android:layout_marginBottom="36dp"
+        android:id="@+id/volume"
+        tools:background="#70808080">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="35sp"
+            tools:text="錄音中..."
+            android:layout_gravity="bottom|center"
+            android:id="@+id/txtRecState"/>
+
+    </FrameLayout>
+    <ImageButton
+        android:id="@+id/btnRec"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/microphone"
+        android:layout_gravity="center|bottom"
+        android:background="@android:color/transparent"
+        android:layout_margin="86dp"
+        android:contentDescription="record" />
+</FrameLayout>

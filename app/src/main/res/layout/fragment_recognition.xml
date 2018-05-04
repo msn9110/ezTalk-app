@@ -61,12 +61,20 @@
     </LinearLayout>
 
     <FrameLayout
-        android:layout_width="228dp"
-        android:layout_height="228dp"
+        android:layout_width="238dp"
+        android:layout_height="238dp"
         android:layout_gravity="center|bottom"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="36dp"
         android:id="@+id/volume"
-        tools:background="#80808080">
+        tools:background="#70808080">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="35sp"
+            tools:text="錄音中..."
+            android:layout_gravity="bottom|center"
+            android:id="@+id/txtRecState"/>
 
     </FrameLayout>
     <ImageButton
@@ -76,6 +84,6 @@
         android:src="@drawable/microphone"
         android:layout_gravity="center|bottom"
         android:background="@android:color/transparent"
-        android:layout_margin="66dp"
+        android:layout_margin="86dp"
         android:contentDescription="record" />
 </FrameLayout>
