@@ -41,10 +41,11 @@ public class Recognition extends Thread {
     @Override
     public void run() {
         super.run();
+        String label = mFile.getParentFile().getName();
         String result = "辨識完成";
         String host = "120.126.145.113";
         String port = ":5000";
-        String apiName = "/speech_recognition";
+        String apiName = "/recognize";
         String url = "http://" + host + port + apiName;
         try {
             byte[] raws = new byte[(int)mFile.length()];
@@ -54,7 +55,8 @@ public class Recognition extends Thread {
             for (int i = 0; i < raws.length; i++)
                 raw[i] = 0xff & raws[i];
             JSONArray rawData = new JSONArray(Arrays.asList(raw));
-            String json = "{\"data\":{\"filename\":\"" + mFile.getName() + "\", \"raw\":"
+            String json = "{\"data\":{\"label\":\"" + label + "\","
+                            + "\"filename\":\"" + mFile.getName() + "\", \"raw\":"
                             + rawData.getJSONArray(0).toString() + "}}";
             StringEntity s = new StringEntity(json, "UTF-8");
             //s.setContentEncoding("UTF-8");
@@ -71,6 +73,7 @@ public class Recognition extends Thread {
             String myResult = getJSONString(httpEntity);
             Intent intent = new Intent(RECOGNITION_FINISHED_ACTION);
             intent.putExtra("response", myResult);
+            intent.putExtra("filepath", mFile.getAbsoluteFile());
             mContext.sendBroadcast(intent);
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();

@@ -55,8 +55,11 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
 
+import static com.hhs.waverecorder.fragment.VoiceCollectFragment.UPDATE_RECORDING_TEXT;
+import static com.hhs.waverecorder.fragment.VoiceCollectFragment.UPDATE_VOLUME_CIRCLE;
 import static com.hhs.waverecorder.receiver.MyReceiver.RECOGNITION_FINISHED_ACTION;
 import static com.hhs.waverecorder.receiver.MyReceiver.RECORD_FINISHED_ACTION;
+import static com.hhs.waverecorder.utils.Utils.lookTable;
 import static com.hhs.waverecorder.utils.Utils.readJSONStream;
 import static com.hhs.waverecorder.utils.Utils.sortJSONArrayByCount;
 
@@ -65,7 +68,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         AdapterView.OnItemClickListener, View.OnClickListener,
         MyListener, CursorChangedListener {
 
-    private final String TAG = "## " + getClass().getName();
+    private final String TAG = "## " + getClass().getSimpleName();
     private final static String CZTABLE = "czTable.json";
     private final static String ZCTABLE = "zcTable_noTone.json";
     //Fragment Variable
@@ -79,11 +82,19 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
             switch (msg.what) {
-                case 1:
+                case UPDATE_VOLUME_CIRCLE:
                     volView.removeAllViews();
                     int level = msg.arg1;
                     VolumeCircle circle = new VolumeCircle(mContext, level, dpi);
                     volView.addView(circle);
+                    break;
+
+                case UPDATE_RECORDING_TEXT:
+                    String recordingMsg = "錄音中";
+                    for (int i = 0; i <= recordingDot; i++)
+                        recordingMsg += ".";
+                    recordingDot = (recordingDot + 1) % 3;
+                    tvRecording.setText(recordingMsg);
             }
         }
     };
@@ -94,6 +105,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     MyText txtMsg;
     ImageButton btnRec;
     FrameLayout volView;
+    TextView tvRecording;
     View recordingView;
     PopupWindow popupWindow;
     ProgressDialog loadingPage;
@@ -113,6 +125,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     private boolean isRecord = false;
     private boolean isVoiceInput = false;
     private boolean txtClear = false;
+    private int recordingDot = 0; // max 2
 
     private void initUI() {
 
@@ -124,6 +137,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         dpi = dm.densityDpi;
 
         volView = mView.findViewById(R.id.volume);
+        tvRecording = mView.findViewById(R.id.txtRecState);
 
         // popup window
         LayoutInflater inflater = LayoutInflater.from(mContext);
@@ -355,17 +369,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         }
     }
 
-    // find pronounce of chinese word
-    private ArrayList<String> lookCZTable(String word) throws JSONException {
-        JSONObject item = czTable.getJSONObject(word);
-        ArrayList<String> candidate = new ArrayList<>();
-        JSONArray jsonArray = sortJSONArrayByCount(item.getJSONArray("pronounces"), false);
-        for (int i = 0; i < jsonArray.length(); i++) {
-            candidate.add(jsonArray.getJSONObject(i).keys().next());
-        }
-        return candidate;
-    }
-    
     // to get pronounce tone
     private int getTone(String pronounce) {
         String toneChar = pronounce.substring(pronounce.length() - 1, pronounce.length());
@@ -436,7 +439,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                     noToneLabelList.add(i, "unknown");
                     myLabelList.add(i, "unknown");
                     try {
-                        ArrayList<String> candidate = lookCZTable(ch);
+                        ArrayList<String> candidate = lookTable(czTable, ch, "pronounces");
                         if (candidate.size() > 0) {
                             String myLabel = candidate.get(0);
                             noToneLabelList.set(i, myLabel.replaceAll("[˙ˊˇˋ]$", ""));
@@ -479,7 +482,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 if (position > 0) {
                     Log.d(TAG, character);
                     try {
-                        ArrayList<String> candidate = lookCZTable(character);
+                        ArrayList<String> candidate = lookTable(czTable, character, "pronounces");
                         String myLabel = (position > myLabelList.size()) ? noToneLabelList.get(position - 1)
                                                                             : myLabelList.get(position - 1);
                         for (int i = 0; i < candidate.size(); i++) {
@@ -604,7 +607,10 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                         wavRecorder.startRecording();
                         try {
                             isRecord = true;
-                            Thread.sleep(2500);
+                            for (int i = 0; i < 5; i++) {
+                                Thread.sleep(500);
+                                mUIHandler.sendEmptyMessage(UPDATE_RECORDING_TEXT);
+                            }
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         } finally {
@@ -637,7 +643,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
     // ###STEP 3###
     @Override
-    public void onFinishRecognition(String result, String correctLabel/*not used here*/) {
+    public void onFinishRecognition(String result, String filepath/*not used here*/) {
         try {
             JSONObject jsonObject = new JSONObject(result);
             JSONObject response = jsonObject.getJSONObject("response");

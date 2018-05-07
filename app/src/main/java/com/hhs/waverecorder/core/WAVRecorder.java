@@ -17,6 +17,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 
+import static com.hhs.waverecorder.fragment.VoiceCollectFragment.UPDATE_VOLUME_CIRCLE;
 import static com.hhs.waverecorder.receiver.MyReceiver.RECORD_FINISHED_ACTION;
 
 @SuppressWarnings("all")
@@ -120,7 +121,7 @@ public class WAVRecorder {
                             }
                             final int level = max / 1638;
                             Message msg = new Message();
-                            msg.what = 1; // volume level
+                            msg.what = UPDATE_VOLUME_CIRCLE; // volume level
                             msg.arg1 = level;
                             mUIHandler.sendMessage(msg);
                         }

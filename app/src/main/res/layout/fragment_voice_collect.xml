@@ -8,50 +8,116 @@
         android:orientation="vertical"
         android:layout_margin="20dp">
 
-        <com.hhs.waverecorder.widget.MyText
+
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/txtMsg"
-            android:textAlignment="center"
-            android:textSize="50sp"
-            android:layout_margin="20dp"
-            tools:text="我"
-            />
+            android:orientation="horizontal"
+            android:baselineAligned="false">
+
+            <com.hhs.waverecorder.widget.MyText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:id="@+id/txtMsg"
+                android:textAlignment="center"
+                android:textSize="50sp"
+                android:layout_margin="20dp"
+                android:layout_gravity="center"
+                tools:text="我"
+                />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_weight="1"
+                android:layout_margin="10dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="noToneLabel:"
+                    android:textSize="35sp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="5dp"/>
+                <Spinner
+                    android:layout_width="match_parent"
+                    android:layout_height="75dp"
+                    android:id="@+id/spMyLabel">
+
+                </Spinner>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_weight="1"
+                android:layout_margin="10dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tone:"
+                    android:textSize="35sp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="5dp"/>
+                <Spinner
+                    android:layout_width="match_parent"
+                    android:layout_height="75dp"
+                    android:id="@+id/spTone">
+
+                </Spinner>
+            </LinearLayout>
+
+        </LinearLayout>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="noToneLabel:"
-            android:textSize="45sp"
-            android:layout_marginTop="10dp"
-            android:layout_marginBottom="5dp"/>
-        <Spinner
-            android:layout_width="match_parent"
-            android:layout_height="75dp"
-            android:id="@+id/spMyLabel">
+            android:id="@+id/tvRes"
+            android:textSize="30sp"
+            tools:text="辨識結果："
+            android:layout_margin="10dp"/>
 
-        </Spinner>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_margin="5dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:layout_weight="1"
+                android:textSize="30sp"
+                android:id="@+id/tvCorrect"
+                tools:text="答對"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:layout_weight="1"
+                android:textSize="30sp"
+                android:id="@+id/tvTotal"
+                tools:text="已錄檔案數量"/>
+        </LinearLayout>
 
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Tone:"
-            android:textSize="45sp"
-            android:layout_marginTop="10dp"
-            android:layout_marginBottom="5dp"/>
-        <Spinner
             android:layout_width="match_parent"
-            android:layout_height="75dp"
-            android:id="@+id/spTone">
-
-        </Spinner>
-
+            android:layout_height="wrap_content"
+            android:id="@+id/tvPath"
+            android:textSize="25sp"
+            tools:text="/path"
+            android:layout_margin="5dp"/>
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="20dp"
             android:text="刪除前一個錄音"
-            android:textSize="50sp"
+            android:textSize="40sp"
             android:id="@+id/btnDel"/>
 
     </LinearLayout>

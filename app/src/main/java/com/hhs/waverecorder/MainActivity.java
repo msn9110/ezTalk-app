@@ -1,281 +1,148 @@
 package com.hhs.waverecorder;
 
 import android.Manifest;
-import android.content.Context;
-import android.content.DialogInterface;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.media.MediaScannerConnection;
 import android.os.Build;
-import android.os.Handler;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.NavigationView;
+import android.support.design.widget.Snackbar;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
-import android.widget.TextView;
-import android.widget.Toast;
 
-
-import com.hhs.waverecorder.receiver.MyReceiver;
 import com.example.hhs.wavrecorder.R;
-import com.hhs.waverecorder.adapter.MyAdapter;
-import com.hhs.waverecorder.adapter.ViewHolder;
-import com.hhs.waverecorder.core.FTPManager;
-import com.hhs.waverecorder.core.WAVRecorder;
-import com.hhs.waverecorder.listener.MyListener;
+import com.hhs.waverecorder.fragment.RecognitionFragment;
+import com.hhs.waverecorder.fragment.VoiceCollectFragment;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
+public class MainActivity extends AppCompatActivity
+        implements NavigationView.OnNavigationItemSelectedListener {
 
-import static com.hhs.waverecorder.receiver.MyReceiver.RECOGNITION_FINISHED_ACTION;
-import static com.hhs.waverecorder.receiver.MyReceiver.RECORD_FINISHED_ACTION;
-
-public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener,
-        MyListener
-{
-
-    // Constants that control the behavior of the recognition code and model
-    // settings. See the audio recognition tutorial for a detailed explanation of
-    // all these, but you should customize them to match your training settings if
-    // you are running your own model.
-    private static final int SAMPLE_RATE = 16000;
-    private static final int SAMPLE_DURATION_MS = 1000;
-    private static final int RECORDING_LENGTH = (int) (SAMPLE_RATE * SAMPLE_DURATION_MS / 1000);
-    private static final long AVERAGE_WINDOW_DURATION_MS = 500;
-    private static final float DETECTION_THRESHOLD = 0.70f;
-    private static final int SUPPRESSION_MS = 1500;
-    private static final int MINIMUM_COUNT = 3;
-    private static final long MINIMUM_TIME_BETWEEN_SAMPLES_MS = 30;
-    private static final String LABEL_FILENAME = "file:///android_asset/conv_labels.txt";
-    private static final String MODEL_FILENAME = "file:///android_asset/no_tone1.pb";
-    private static final String INPUT_DATA_NAME = "decoded_sample_data:0";
-    private static final String SAMPLE_RATE_NAME = "decoded_sample_data:1";
-    private static final String OUTPUT_SCORES_NAME = "labels_softmax";
-
-    private static final String LOG_TAG = MainActivity.class.getSimpleName();
-
-    private WAVRecorder wavRecorder;
-    private boolean isRecord = false;
-    private ListView listLabels, listTones;
-    private TextView txtRes, txtAcc, txtRecState;
-    private Handler mHandler = new Handler();
     private static final int REQUEST_RECORD_AUDIO = 13;
-    private Context mContext;
-    private MyReceiver myReceiver = new MyReceiver();
 
-    private List<String> labels = new ArrayList<>();
-    private List<String> displayedLabels = new ArrayList<>();
-    private int total = 0, count = 0;
-    String tone = "1";
-    
-    MyAdapter toneAdapter;
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mContext = this;
         requestPermission();
-        listLabels = (ListView) findViewById(R.id.listLabels);
-        listTones = (ListView) findViewById(R.id.listPron);
-        txtRes = (TextView) findViewById(R.id.txtRes);
-        txtAcc = (TextView) findViewById(R.id.txtAcc);
-        txtRecState = (TextView) findViewById(R.id.txtRecState);
 
-        // Load the labels for the model, but only display those that don't start
-        // with an underscore.
-        String actualFilename = LABEL_FILENAME.split("file:///android_asset/")[1];
-        Log.i(LOG_TAG, "Reading labels from: " + actualFilename);
-        BufferedReader br = null;
-        try {
-            br = new BufferedReader(new InputStreamReader(getAssets().open(actualFilename)));
-            String line;
-            while ((line = br.readLine()) != null) {
-                labels.add(line);
-                if (line.charAt(0) != '_') {
-                    displayedLabels.add(line.substring(0, 1).toUpperCase() + line.substring(1));
-                }
-            }
-            br.close();
-        } catch (IOException e) {
-            throw new RuntimeException("Problem reading label file!", e);
-        }
+        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(this);
 
-        // Build a list view based on these labels.
-        ArrayAdapter<String> arrayAdapter =
-                new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, displayedLabels);
-        listLabels.setAdapter(arrayAdapter);
-        listLabels.setOnItemClickListener(this);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
-        List<String> tones = new ArrayList<>(Arrays.asList("0", "1", "2", "3", "4"));
-        toneAdapter = new MyAdapter(this, tones);
-        listTones.setAdapter(toneAdapter);
-        listTones.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close){
             @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                toneAdapter.setSelectPosition(i);
-                toneAdapter.notifyDataSetChanged();
-                tone = ((ViewHolder) view.getTag()).name.getText().toString();
+            public void onDrawerClosed(View drawerView) {
+                super .onDrawerClosed(drawerView);
             }
-        });
-        toneAdapter.setSelectPosition(1);
-        //listTones.setSelection(1);
-        myReceiver.setOnListener(this);
-    }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(RECORD_FINISHED_ACTION);
-        intentFilter.addAction(RECOGNITION_FINISHED_ACTION);
-        registerReceiver(myReceiver, intentFilter);
-    }
+            @Override
+            public void onDrawerOpened(View drawerView) {
+                super .onDrawerOpened(drawerView);
+            }
+        };
+        drawer.addDrawerListener(toggle);
+        toggle.syncState();
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        unregisterReceiver(myReceiver);
     }
 
     private void requestPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(
                     new String[]{android.Manifest.permission.RECORD_AUDIO,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_RECORD_AUDIO);
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_RECORD_AUDIO);
+        } else {
+            replaceFragment(new RecognitionFragment());
         }
     }
 
     @Override
     public void onRequestPermissionsResult(
-            int requestCode, String[] permissions, int[] grantResults) {
+            int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == REQUEST_RECORD_AUDIO
                 && grantResults.length > 0
                 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            replaceFragment(new RecognitionFragment());
+        } else {
+            this.finish();
+        }
+    }
 
+    private void replaceFragment(Fragment mFragment) {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        transaction.replace(R.id.fragment_container, mFragment);
+        transaction.commit();
+    }
+
+    @Override
+    public void onBackPressed() {
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        if (drawer.isDrawerOpen(GravityCompat.START)) {
+            drawer.closeDrawer(GravityCompat.START);
+        } else {
+            super.onBackPressed();
         }
     }
 
     @Override
-    public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-        String select = ((TextView) view).getText().toString();
-        switch (adapterView.getId()) {
-            case R.id.listLabels:
-                SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd-hhmmss", Locale.getDefault());
-                final String path = "MyRecorder/" + select + "/" + tone +
-                                                             "-" + df.format(new Date()) + ".wav";
-                Thread worker = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        wavRecorder = new WAVRecorder(path, mContext, null);
-                        System.out.println("Start Recording");
-                        mHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                txtRecState.setVisibility(View.VISIBLE);
-                            }
-                        });
-                        wavRecorder.startRecording();
-                        try {
-                            isRecord = true;
-                            Thread.sleep(2500);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        } finally {
-                            wavRecorder.stopRecording();
-                            isRecord = false;
-                            System.out.println("recording finished!");
-                        }
-                    }
-                });
-                if (!isRecord)
-                    worker.start();
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @SuppressWarnings("StatementWithEmptyBody")
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        // Handle navigation view item clicks here.
+        int id = item.getItemId();
+
+        Fragment mFragment;
+        switch (id) {
+            case R.id.nav_fragment_data_collect:
+                mFragment = new VoiceCollectFragment();
+                break;
+
+            default:
+                mFragment = new RecognitionFragment();
                 break;
         }
+
+        replaceFragment(mFragment);
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        drawer.closeDrawer(GravityCompat.START);
+        return true;
     }
-
-    private void startRecognition(File file) {
-        Toast.makeText(mContext, "saved to : " + file.getAbsolutePath(), Toast.LENGTH_SHORT).show();
-        total++;
-        txtAcc.setText(String.valueOf(total));
-        //new FTPManager(mContext, file).execute();
-    }
-
-    @Override
-    public void onFinishRecord(String path) {
-        txtRecState.setVisibility(View.GONE);
-        final File file = new File(path);
-
-        AlertDialog.Builder dialog = new AlertDialog.Builder(mContext)
-                                            .setTitle("是否保存")
-                                            .setPositiveButton("是", new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialogInterface, int i) {
-                                                    if (file.length() <= 44) {
-                                                        file.delete();
-                                                        MediaScannerConnection.scanFile(mContext,
-                                                                new String[] {file.getAbsolutePath()}, null, null);
-                                                    } else {
-                                                        startRecognition(file);
-                                                    }
-
-                                                }
-                                            })
-                                            .setNegativeButton("否", new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialogInterface, int i) {
-                                                    file.delete();
-                                                    MediaScannerConnection.scanFile(mContext,
-                                                            new String[] {file.getAbsolutePath()}, null, null);
-                                                }
-                                            });
-        dialog.show();
-    }
-
-    @Override
-    public void onFinishRecognition(String result, String label) {
-        try {
-            JSONObject jsonObject = new JSONObject(result);
-            JSONObject response = jsonObject.getJSONObject("response");
-            boolean success = response.getBoolean("success");
-            txtRes.setText("");
-            if (success) {
-                total += 1;
-                JSONArray pronouces = response.getJSONArray("result");
-                ArrayList<String> myResults = new ArrayList<>();
-                String text = "";
-                for (int i = 0; i < pronouces.length(); i++) {
-                    String element = pronouces.getString(i);
-                    if (element.contentEquals(label))
-                        count += 1;
-                    myResults.add(element);
-                    text += element + ",";
-
-                }
-                System.out.println(text);
-                txtRes.setText(text);
-                String accuracy = String.valueOf(count) + "/" + String.valueOf(total);
-                txtAcc.setText(accuracy);
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-    }
-
-
 }

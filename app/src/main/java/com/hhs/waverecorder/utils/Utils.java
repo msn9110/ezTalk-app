@@ -54,4 +54,16 @@ public final class Utils {
         String jsonStr = sb.toString();
         return new JSONObject(jsonStr);
     }
+
+    // find pronounce of chinese word
+    public static ArrayList<String> lookTable(JSONObject table, String word, String key) throws JSONException {
+        JSONObject item = table.getJSONObject(word);
+        ArrayList<String> candidate = new ArrayList<>();
+        JSONArray jsonArray = sortJSONArrayByCount(item.getJSONArray(key), false);
+        for (int i = 0; i < jsonArray.length(); i++) {
+            candidate.add(jsonArray.getJSONObject(i).keys().next());
+        }
+        return candidate;
+    }
+
 }
