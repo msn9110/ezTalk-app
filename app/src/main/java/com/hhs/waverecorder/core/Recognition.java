@@ -73,7 +73,7 @@ public class Recognition extends Thread {
             String myResult = getJSONString(httpEntity);
             Intent intent = new Intent(RECOGNITION_FINISHED_ACTION);
             intent.putExtra("response", myResult);
-            intent.putExtra("filepath", mFile.getAbsoluteFile());
+            intent.putExtra("filepath", mFile.getAbsolutePath());
             mContext.sendBroadcast(intent);
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();

@@ -83,9 +83,10 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
             super.handleMessage(msg);
             switch (msg.what) {
                 case UPDATE_VOLUME_CIRCLE:
-                    volView.removeAllViews();
+                    if (circle != null)
+                        volView.removeView(circle);
                     int level = msg.arg1;
-                    VolumeCircle circle = new VolumeCircle(mContext, level, dpi);
+                    circle = new VolumeCircle(mContext, level, dpi);
                     volView.addView(circle);
                     break;
 
@@ -94,7 +95,9 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                     for (int i = 0; i <= recordingDot; i++)
                         recordingMsg += ".";
                     recordingDot = (recordingDot + 1) % 3;
-                    tvRecording.setText(recordingMsg);
+                    tvRecNOW.setText(recordingMsg);
+                    System.out.println(recordingMsg);
+                    break;
             }
         }
     };
@@ -105,7 +108,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     MyText txtMsg;
     ImageButton btnRec;
     FrameLayout volView;
-    TextView tvRecording;
+    VolumeCircle circle = null;
+    TextView tvRecNOW;
     View recordingView;
     PopupWindow popupWindow;
     ProgressDialog loadingPage;
@@ -137,7 +141,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         dpi = dm.densityDpi;
 
         volView = mView.findViewById(R.id.volume);
-        tvRecording = mView.findViewById(R.id.txtRecState);
+        tvRecNOW = mView.findViewById(R.id.tvRecNOW);
 
         // popup window
         LayoutInflater inflater = LayoutInflater.from(mContext);
@@ -449,7 +453,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                         Log.w(TAG, "no Mapping In czTable");
                     }
                 }
-            } else { // delete
+            } else if (!insertMode) { // delete
                 if (!txtClear) {
                     for (int i = start; i < endPos; i++) {
                         waveFiles.remove(i);
@@ -609,7 +613,9 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                             isRecord = true;
                             for (int i = 0; i < 5; i++) {
                                 Thread.sleep(500);
-                                mUIHandler.sendEmptyMessage(UPDATE_RECORDING_TEXT);
+                                Message message = new Message();
+                                message.what = UPDATE_RECORDING_TEXT;
+                                mUIHandler.sendMessage(message);
                             }
                         } catch (InterruptedException e) {
                             e.printStackTrace();
@@ -634,8 +640,9 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     // ###STEP 2###
     @Override
     public void onFinishRecord(String path) {
-        popupWindow.dismiss();
-        volView.removeAllViews();
+        tvRecNOW.setText("");
+        volView.removeView(circle);
+        circle = null;
         isVoiceInput = true;
         waveFiles.add(txtMsg.getSelectionStart(), path);
         new Recognition(mContext, path, mUIHandler).start(); // ###STEP 2-1###

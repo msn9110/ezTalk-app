@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools">
+    <FrameLayout
+        android:layout_width="238dp"
+        android:layout_height="238dp"
+        android:layout_gravity="center|bottom"
+        android:layout_marginBottom="36dp"
+        android:id="@+id/volume"
+        tools:background="#70808080">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="30sp"
+            android:layout_marginBottom="5dp"
+            android:text=""
+            tools:text="錄音中..."
+            android:layout_gravity="bottom|center"
+            android:id="@+id/tvRecNOW"/>
+    </FrameLayout>
+
+
+
+    <ImageButton
+        android:id="@+id/btnRec"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/microphone"
+        android:layout_gravity="center|bottom"
+        android:background="@android:color/transparent"
+        android:layout_margin="86dp"
+        android:contentDescription="record" />
+
+</FrameLayout>

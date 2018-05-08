@@ -23,6 +23,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.hhs.wavrecorder.R;
+import com.hhs.waverecorder.core.Recognition;
 import com.hhs.waverecorder.core.WAVRecorder;
 import com.hhs.waverecorder.listener.CursorChangedListener;
 import com.hhs.waverecorder.listener.MyListener;
@@ -40,11 +41,13 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.Locale;
-import java.util.Stack;
 
 import static com.hhs.waverecorder.receiver.MyReceiver.RECOGNITION_FINISHED_ACTION;
 import static com.hhs.waverecorder.receiver.MyReceiver.RECORD_FINISHED_ACTION;
+import static com.hhs.waverecorder.utils.MyFile.moveFile;
 import static com.hhs.waverecorder.utils.Utils.lookTable;
 import static com.hhs.waverecorder.utils.Utils.readJSONStream;
 
@@ -71,9 +74,10 @@ public class VoiceCollectFragment extends Fragment implements
             super.handleMessage(msg);
             switch (msg.what) {
                 case UPDATE_VOLUME_CIRCLE:
-                    volView.removeAllViews();
+                    if (circle != null)
+                        volView.removeView(circle);
                     int level = msg.arg1;
-                    VolumeCircle circle = new VolumeCircle(mContext, level, dpi);
+                    circle = new VolumeCircle(mContext, level, dpi);
                     volView.addView(circle);
                     break;
 
@@ -82,7 +86,8 @@ public class VoiceCollectFragment extends Fragment implements
                     for (int i = 0; i <= recordingDot; i++)
                         recordingMsg += ".";
                     recordingDot = (recordingDot + 1) % 3;
-                    tvRecording.setText(recordingMsg);
+                    tvRecNOW.setText(recordingMsg);
+                    break;
             }
         }
     };
@@ -93,14 +98,15 @@ public class VoiceCollectFragment extends Fragment implements
     FrameLayout volView;
     Spinner spMyLabel, spTone;
     MyText txtWord;
-    TextView tvRecording, tvCorrect, tvTotal, tvPath, tvRes;
+    TextView tvRecNOW, tvCorrect, tvTotal, tvPath, tvRes;
+    VolumeCircle circle = null;
 
     //Global Data
     JSONObject czTable/*chineseToZhuyin*/;
     int width, height, dpi; // device resolution in pixels used for UI
 
     //Global Variable
-    Stack<String> recordedPath = new Stack<>();
+    Deque<String> recordedPath = new LinkedList<>();
     String label = "";
     String tone = "";
     int correct = 0, total = 0;
@@ -123,7 +129,7 @@ public class VoiceCollectFragment extends Fragment implements
         btnDel = mView.findViewById(R.id.btnDel);
         spMyLabel = mView.findViewById(R.id.spMyLabel);
         spTone = mView.findViewById(R.id.spTone);
-        tvRecording = mView.findViewById(R.id.txtRecState);
+        tvRecNOW = mView.findViewById(R.id.tvRecNOW);
         tvPath = mView.findViewById(R.id.tvPath);
         tvTotal = mView.findViewById(R.id.tvTotal);
         tvCorrect = mView.findViewById(R.id.tvCorrect);
@@ -215,16 +221,17 @@ public class VoiceCollectFragment extends Fragment implements
                 break;
 
             case R.id.btnDel:
-                if (!recordedPath.empty()) {
-                    String path = recordedPath.pop();
-                    new File(path).delete();
+                if (recordedPath.size() > 0) {
+                    String path = recordedPath.removeFirst();
+                    File file = new File(path);
+                    file.delete();
                     MediaScannerConnection.scanFile(mContext, new String[]{path}, null, null);
-                    path = recordedPath.peek();
-                    recordedPath.push(path);
+                    path = recordedPath.peekFirst();
                     tvPath.setText(path);
                     total--;
                     tvTotal.setText("已錄 : " + total);
                 }
+                break;
         }
     }
 
@@ -282,14 +289,16 @@ public class VoiceCollectFragment extends Fragment implements
 
     @Override
     public void onFinishRecord(String path) {
-        tvRecording.setText("");
-        recordedPath.push(path);
+        tvRecNOW.setText("");
+        volView.removeView(circle);
+        circle = null;
         File file = new File(path);
         if (file.length() > 44) {
             total++;
             tvTotal.setText("已錄 : " + total);
-            recordedPath.push(path);
+            recordedPath.addFirst(path);
             tvPath.setText(path);
+            new Recognition(mContext, path, mUIHandler).start();
         } else {
             file.delete();
             MediaScannerConnection.scanFile(mContext, new String[]{path}, null, null);
@@ -301,7 +310,7 @@ public class VoiceCollectFragment extends Fragment implements
         File file = new File(filepath);
         String correctLabel = file.getParentFile().getName();
         try {
-            JSONObject response = new JSONObject(result);
+            JSONObject response = new JSONObject(result).getJSONObject("response");
             if (response.getBoolean("success")) {
                 String myResult = "";
                 JSONArray jsonArray = response.getJSONArray("result");
@@ -313,10 +322,10 @@ public class VoiceCollectFragment extends Fragment implements
                 myResult = myResult.replaceAll(",$", "");
                 tvRes.setText(myResult);
                 tvCorrect.setText("Accuracy : " + correct + " / " + total);
-
-                String newPath = filepath.replaceFirst("(.*)/(.*.wav)$", "$0/uploade-$1");
-                recordedPath.set(recordedPath.search(filepath), newPath);
-                file.renameTo(new File(newPath));
+                recordedPath.removeFirst();
+                String newPath = file.getParent() + "/uploaded-" + file.getName();
+                recordedPath.addFirst(newPath);
+                moveFile(filepath, newPath);
                 MediaScannerConnection.scanFile(mContext, new String[]{filepath, newPath}, null, null);
                 if (tvPath.getText().toString().contentEquals(filepath))
                     tvPath.setText(newPath);
