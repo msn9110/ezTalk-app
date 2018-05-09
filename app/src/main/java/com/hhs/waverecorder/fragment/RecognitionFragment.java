@@ -83,11 +83,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
             super.handleMessage(msg);
             switch (msg.what) {
                 case UPDATE_VOLUME_CIRCLE:
-                    if (circle != null)
-                        volView.removeView(circle);
                     int level = msg.arg1;
-                    circle = new VolumeCircle(mContext, level, dpi);
-                    volView.addView(circle);
+                    circle.setLevel(level);
                     break;
 
                 case UPDATE_RECORDING_TEXT:
@@ -222,7 +219,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.i(TAG, "onCreate");
+        Log.i(TAG, "onCreate : " + Thread.currentThread().getId());
         Bundle args = getArguments();
         try {
             czTable = new JSONObject(args.getString("czJSONString"));
@@ -584,33 +581,13 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
             case R.id.btnRec:
                 // ###STEP 1###
                 SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd-hhmmss", Locale.getDefault());
-                final String path = "MyRecorder/tmp/" + df.format(new Date()) + ".wav";
-
-                Thread recorder = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        WAVRecorder wavRecorder = new WAVRecorder(path, mContext, mUIHandler);
-                        Log.d(TAG, "Start Recording");
-                        wavRecorder.startRecording();
-                        try {
-                            isRecord = true;
-                            for (int i = 0; i < 5; i++) {
-                                Thread.sleep(500);
-                                Message message = new Message();
-                                message.what = UPDATE_RECORDING_TEXT;
-                                mUIHandler.sendMessage(message);
-                            }
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        } finally {
-                            wavRecorder.stopRecording();
-                            isRecord = false;
-                            Log.d(TAG, "Finish Recording!");
-                        }
-                    }
-                });
+                String path = "MyRecorder/tmp/" + df.format(new Date()) + ".wav";
+                WAVRecorder recorder = new WAVRecorder(mContext, path, 2500, mUIHandler);
                 if (!isRecord) {
-                    //popupWindow.showAtLocation(mView, Gravity.CENTER, width/8*2, height/8*2);
+                    circle = new VolumeCircle(mContext, 0, dpi);
+                    volView.addView(circle);
+                    isRecord = true;
+                    Log.d(TAG, "Start Recording");
                     recorder.start(); // ###STEP 1-1###
                 }
                 break;
@@ -623,9 +600,13 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     // ###STEP 2###
     @Override
     public void onFinishRecord(String path) {
+        isRecord = false;
+        Log.d(TAG, "Stop Recording");
+        // notify UI finish recording
         tvRecNOW.setText("");
         volView.removeView(circle);
         circle = null;
+        // non UI
         isVoiceInput = true;
         waveFiles.add(txtMsg.getSelectionStart(), path);
         new Recognition(mContext, path, mUIHandler).start(); // ###STEP 2-1###

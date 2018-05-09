@@ -14,8 +14,7 @@ public class VolumeCircle extends View {
     public VolumeCircle(Context context, int level, int dpi) {
         super(context);
         scale = dpi / 160;
-        this.level = (level < 0) ? 0 : level;
-        this.level = (level > 20) ? 20 : level;
+        setLevel(level);
     }
 
     public VolumeCircle(Context context) {
@@ -36,5 +35,13 @@ public class VolumeCircle extends View {
         float r = (34 + 4 * level) * scale;
 
         canvas.drawCircle(x, x, r, pen);
+    }
+
+    public void setLevel(int level) {
+        this.level = (level < 0) ? 0 : level;
+        this.level = (level > 20) ? 20 : level;
+
+        // re-draw
+        invalidate();
     }
 }

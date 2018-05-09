@@ -20,7 +20,7 @@ import android.os.Message;
 import static com.hhs.waverecorder.AppValue.*;
 
 @SuppressWarnings("all")
-public class WAVRecorder {
+public class WAVRecorder extends Thread {
     private Context mContext;
     private static final int RECORDER_BPP = 16;
     private static final String AUDIO_RECORDER_FOLDER = "AudioRecorder";
@@ -35,16 +35,36 @@ public class WAVRecorder {
     private boolean isRecording = false;
 
     private String output;
-    private Handler mUIHandler;
+    private Handler mUIHandler; // callback handler
     private double updateDuration = 1.0;
+    private int n; // will recording n * 500 ms
 
-    public WAVRecorder(String path, Context context, Handler handler) {
+    public WAVRecorder(Context context, String path, int millis, Handler handler) {
         bufferSize = (int) (AudioRecord.getMinBufferSize(RECORDER_SAMPLERATE,
                 RECORDER_CHANNELS, RECORDER_AUDIO_ENCODING) * updateDuration * 3);
         this.mContext = context;
         mUIHandler = handler;
         output = Environment.getExternalStorageDirectory() + "/" + path;
+        if (millis < 1000)
+            millis = 1000;
+        n = millis % 500 == 0 ? millis / 500 : millis / 500 + 1;
 
+    }
+
+    @Override
+    public void run() {
+        super.run();
+        startRecording();
+        try {
+            for (int i = 0; i < n; i++) {
+                Thread.sleep(500);
+                mUIHandler.sendEmptyMessage(UPDATE_RECORDING_TEXT);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            stopRecording();
+        }
     }
 
     private String getFilename() {
