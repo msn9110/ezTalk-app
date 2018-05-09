@@ -4,15 +4,17 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-import com.hhs.waverecorder.listener.MyListener;
+import com.hhs.waverecorder.listener.VoiceInputListener;
 
-public class MyReceiver extends BroadcastReceiver {
+import static com.hhs.waverecorder.AppValue.RECOGNITION_FINISHED_ACTION;
+import static com.hhs.waverecorder.AppValue.RECORD_FINISHED_ACTION;
 
-    public final static String RECORD_FINISHED_ACTION = "com.hhs.record_finished_action";
-    public final static String RECOGNITION_FINISHED_ACTION = "com.hhs.recognition_finished_action";
-    private MyListener listener;
+public class VoiceInputEventReceiver extends BroadcastReceiver {
 
-    public void setOnListener(MyListener listener) {
+
+    private VoiceInputListener listener;
+
+    public void setOnListener(VoiceInputListener listener) {
         this.listener = listener;
 
     }

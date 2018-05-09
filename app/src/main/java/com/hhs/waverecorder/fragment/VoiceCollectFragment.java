@@ -20,14 +20,13 @@ import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.example.hhs.wavrecorder.R;
 import com.hhs.waverecorder.core.Recognition;
 import com.hhs.waverecorder.core.WAVRecorder;
-import com.hhs.waverecorder.listener.CursorChangedListener;
-import com.hhs.waverecorder.listener.MyListener;
-import com.hhs.waverecorder.receiver.MyReceiver;
+import com.hhs.waverecorder.listener.OnCursorChangedListener;
+import com.hhs.waverecorder.listener.VoiceInputListener;
+import com.hhs.waverecorder.receiver.VoiceInputEventReceiver;
 import com.hhs.waverecorder.widget.MyText;
 import com.hhs.waverecorder.widget.VolumeCircle;
 
@@ -36,7 +35,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,29 +43,33 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Locale;
 
-import static com.hhs.waverecorder.receiver.MyReceiver.RECOGNITION_FINISHED_ACTION;
-import static com.hhs.waverecorder.receiver.MyReceiver.RECORD_FINISHED_ACTION;
+import static com.hhs.waverecorder.AppValue.*;
 import static com.hhs.waverecorder.utils.MyFile.moveFile;
 import static com.hhs.waverecorder.utils.Utils.lookTable;
-import static com.hhs.waverecorder.utils.Utils.readJSONStream;
 
 @SuppressWarnings("all")
 public class VoiceCollectFragment extends Fragment implements
         View.OnClickListener, AdapterView.OnItemSelectedListener,
-        CursorChangedListener, MyListener {
+        OnCursorChangedListener, VoiceInputListener {
 
-    public final static int UPDATE_VOLUME_CIRCLE = 1;
-    public final static int UPDATE_RECORDING_TEXT = 2;
+
+    public static VoiceCollectFragment newInstance(String czJSONString) {
+        VoiceCollectFragment mFragment = new VoiceCollectFragment();
+        Bundle args = new Bundle();
+        args.putString("czJSONString", czJSONString);
+        mFragment.setArguments(args);
+        return mFragment;
+    }
+
 
     private final String TAG = "## " + getClass().getSimpleName();
-    private final static String CZTABLE = "czTable.json";
 
     //Fragment Variable
     Context mContext;
     View mView;
 
     //Important Variable
-    MyReceiver eventReceiver = new MyReceiver();
+    VoiceInputEventReceiver eventReceiver = new VoiceInputEventReceiver();
     Handler mUIHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -151,6 +153,13 @@ public class VoiceCollectFragment extends Fragment implements
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.i(TAG, "onCreate");
+        Bundle args = getArguments();
+        try {
+            czTable = new JSONObject(args.getString("czJSONString"));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
         mContext = getActivity();
         eventReceiver.setOnListener(this);
     }
@@ -158,6 +167,7 @@ public class VoiceCollectFragment extends Fragment implements
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        Log.i(TAG, "onCreateView");
         mView = inflater.inflate(R.layout.fragment_voice_collect, container, false);
         initUI();
         return mView;
@@ -165,20 +175,12 @@ public class VoiceCollectFragment extends Fragment implements
 
     @Override
     public void onStart() {
+        Log.i(TAG, "onStart");
         super.onStart();
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(RECORD_FINISHED_ACTION);
         intentFilter.addAction(RECOGNITION_FINISHED_ACTION);
         mContext.registerReceiver(eventReceiver, intentFilter);
-        long start = System.currentTimeMillis();
-        try {
-            czTable = readJSONStream(mContext.openFileInput(CZTABLE));
-            double duration = (double) (System.currentTimeMillis() - start) / 1000;
-            Toast.makeText(mContext, "Loading Time : " + String.valueOf(duration) + " sec",
-                    Toast.LENGTH_SHORT).show();
-        } catch (JSONException | IOException e) {
-            e.printStackTrace();
-        }
     }
 
     @Override

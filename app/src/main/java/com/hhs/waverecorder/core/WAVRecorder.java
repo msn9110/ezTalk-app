@@ -17,8 +17,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 
-import static com.hhs.waverecorder.fragment.VoiceCollectFragment.UPDATE_VOLUME_CIRCLE;
-import static com.hhs.waverecorder.receiver.MyReceiver.RECORD_FINISHED_ACTION;
+import static com.hhs.waverecorder.AppValue.*;
 
 @SuppressWarnings("all")
 public class WAVRecorder {

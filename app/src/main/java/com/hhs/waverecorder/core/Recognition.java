@@ -23,7 +23,7 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 
-import static com.hhs.waverecorder.receiver.MyReceiver.RECOGNITION_FINISHED_ACTION;
+import static com.hhs.waverecorder.AppValue.*;
 
 @SuppressWarnings("all")
 public class Recognition extends Thread {

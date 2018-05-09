@@ -29,15 +29,14 @@ import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.example.hhs.wavrecorder.R;
 import com.hhs.waverecorder.core.Recognition;
 import com.hhs.waverecorder.core.Updater;
 import com.hhs.waverecorder.core.WAVRecorder;
-import com.hhs.waverecorder.listener.CursorChangedListener;
-import com.hhs.waverecorder.listener.MyListener;
-import com.hhs.waverecorder.receiver.MyReceiver;
+import com.hhs.waverecorder.listener.OnCursorChangedListener;
+import com.hhs.waverecorder.listener.VoiceInputListener;
+import com.hhs.waverecorder.receiver.VoiceInputEventReceiver;
 import com.hhs.waverecorder.utils.MyFile;
 import com.hhs.waverecorder.widget.VolumeCircle;
 import com.hhs.waverecorder.widget.MyText;
@@ -47,36 +46,37 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
 
-import static com.hhs.waverecorder.fragment.VoiceCollectFragment.UPDATE_RECORDING_TEXT;
-import static com.hhs.waverecorder.fragment.VoiceCollectFragment.UPDATE_VOLUME_CIRCLE;
-import static com.hhs.waverecorder.receiver.MyReceiver.RECOGNITION_FINISHED_ACTION;
-import static com.hhs.waverecorder.receiver.MyReceiver.RECORD_FINISHED_ACTION;
+import static com.hhs.waverecorder.AppValue.*;
 import static com.hhs.waverecorder.utils.Utils.lookTable;
-import static com.hhs.waverecorder.utils.Utils.readJSONStream;
 import static com.hhs.waverecorder.utils.Utils.sortJSONArrayByCount;
 
 @SuppressWarnings("all")
 public class RecognitionFragment extends Fragment implements AdapterView.OnItemSelectedListener,
         AdapterView.OnItemClickListener, View.OnClickListener,
-        MyListener, CursorChangedListener {
+        OnCursorChangedListener, VoiceInputListener {
+
+    public static RecognitionFragment newInstance(String czJSONString, String zcJSONString) {
+        RecognitionFragment mFragment = new RecognitionFragment();
+        Bundle args = new Bundle();
+        args.putString("czJSONString", czJSONString);
+        args.putString("zcJSONString", zcJSONString);
+        mFragment.setArguments(args);
+        return mFragment;
+    }
 
     private final String TAG = "## " + getClass().getSimpleName();
-    private final static String CZTABLE = "czTable.json";
-    private final static String ZCTABLE = "zcTable_noTone.json";
     //Fragment Variable
     Context mContext;
     View mView;
 
     //Important Variable
-    MyReceiver eventReceiver = new MyReceiver();
+    VoiceInputEventReceiver eventReceiver = new VoiceInputEventReceiver();
     Handler mUIHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -96,7 +96,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                         recordingMsg += ".";
                     recordingDot = (recordingDot + 1) % 3;
                     tvRecNOW.setText(recordingMsg);
-                    System.out.println(recordingMsg);
                     break;
             }
         }
@@ -173,7 +172,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         btnRec.setOnClickListener(this);
 
         // For EditText or TextView
-        txtMsg.setText("");
+        txtMsg.setFocusable(false);
         txtMsg.setOnCursorChangedListener(this);
         txtMsg.addTextChangedListener(textWatcher);
 
@@ -223,6 +222,14 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.i(TAG, "onCreate");
+        Bundle args = getArguments();
+        try {
+            czTable = new JSONObject(args.getString("czJSONString"));
+            zcTable = new JSONObject(args.getString("zcJSONString"));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
         mContext = getActivity();
         eventReceiver.setOnListener(this);
     }
@@ -230,6 +237,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        Log.i(TAG, "onCreateView");
         mView = inflater.inflate(R.layout.fragment_recognition, container, false);
         initUI();
         return mView;
@@ -237,16 +245,12 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
     @Override
     public void onStart() {
+        Log.i(TAG, "onStart");
         super.onStart();
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(RECORD_FINISHED_ACTION);
         intentFilter.addAction(RECOGNITION_FINISHED_ACTION);
         mContext.registerReceiver(eventReceiver, intentFilter);
-        long start = System.currentTimeMillis();
-        readTable();
-        double duration = (double) (System.currentTimeMillis() - start) / 1000;
-        Toast.makeText(mContext, "Loading Time : " + String.valueOf(duration) + " sec",
-                Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -254,27 +258,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         super.onStop();
         mContext.unregisterReceiver(eventReceiver);
         storeTable();
-    }
-
-    // read two tables
-    private void readTable() {
-        try {
-            File pronounceToWord = new File(mContext.getFilesDir(), ZCTABLE);
-            InputStream dictStream;
-            if (pronounceToWord.exists())
-                dictStream = mContext.openFileInput(ZCTABLE);
-            else
-                dictStream = mContext.getAssets().open(ZCTABLE);
-            zcTable = readJSONStream(dictStream);
-            File myDic = new File(mContext.getFilesDir(), CZTABLE);
-            if (myDic.exists())
-                dictStream = mContext.openFileInput(CZTABLE);
-            else
-                dictStream = mContext.getAssets().open(CZTABLE);
-            czTable = readJSONStream(dictStream);
-        } catch (IOException | JSONException e) {
-            e.printStackTrace();
-        }
     }
 
     // store ZCTABLE CZTABLE

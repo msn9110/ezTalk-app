@@ -3,11 +3,11 @@ package com.hhs.waverecorder.widget;
 import android.content.Context;
 import android.util.AttributeSet;
 
-import com.hhs.waverecorder.listener.CursorChangedListener;
+import com.hhs.waverecorder.listener.OnCursorChangedListener;
 
 
 public class MyText extends android.support.v7.widget.AppCompatEditText {
-    private CursorChangedListener listener;
+    private OnCursorChangedListener listener;
     public MyText(Context context) {
         super(context);
     }
@@ -18,7 +18,7 @@ public class MyText extends android.support.v7.widget.AppCompatEditText {
         super(context, attrs, defStyleAttr);
     }
 
-    public void setOnCursorChangedListener(CursorChangedListener listener) {
+    public void setOnCursorChangedListener(OnCursorChangedListener listener) {
         this.listener = listener;
     }
 
