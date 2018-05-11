@@ -565,14 +565,22 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 } else {
                     noToneLabelList.set(msgPos, noToneLabel);
                 }
-                String msg = txtMsg.getText().toString();
-                String part1 = msg.substring(0, msgPos);
-                String part2 = (msgPos + 1 > msg.length()) ? "" : msg.substring(msgPos + 1, msg.length());
-                String text = part1 + select + part2; // modify the word behind cursor
-                txtMsg.setText(text); // will trigger STEP 6 TextWatcher
-                txtMsg.setSelection(part1.length() + select.length()); // trigger onCursorChanged event
+                lvWordsItemClick(select, false);
                 break;
         }
+    }
+
+    private void lvWordsItemClick(String word, boolean longClick) {
+        int msgPos = txtMsg.getSelectionStart();
+        String msg = txtMsg.getText().toString();
+        String part1 = msg.substring(0, msgPos);
+        String part2 = (msgPos + 1 > msg.length()) ? "" : msg.substring(msgPos + 1, msg.length());
+        if (longClick) // insert word by list
+            part2 = msg.substring(msgPos, msg.length());
+        String text = part1 + word + part2; // modify the word behind cursor
+        txtMsg.setText(text); // will trigger STEP 6 TextWatcher
+        if (isVoiceInput || longClick)
+            txtMsg.setSelection(part1.length() + word.length()); // trigger onCursorChangedevent
     }
 
     @Override
@@ -588,7 +596,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                     volView.addView(circle);
                     isRecord = true;
                     Log.d(TAG, "Start Recording");
-                    recorder.start(); // ###STEP 1-1###
+                    recorder.startRecording(); // ###STEP 1-1###
                 }
                 break;
         }

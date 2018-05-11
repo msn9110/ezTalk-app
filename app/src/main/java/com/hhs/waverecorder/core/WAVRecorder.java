@@ -20,7 +20,7 @@ import android.os.Message;
 import static com.hhs.waverecorder.AppValue.*;
 
 @SuppressWarnings("all")
-public class WAVRecorder extends Thread {
+public class WAVRecorder {
     private Context mContext;
     private static final int RECORDER_BPP = 16;
     private static final String AUDIO_RECORDER_FOLDER = "AudioRecorder";
@@ -39,33 +39,39 @@ public class WAVRecorder extends Thread {
     private double updateDuration = 1.0;
     private int n; // will recording n * 500 ms
 
+    private Thread timer = new Thread(new Runnable() {
+        @Override
+        public void run() {
+            try {
+                for (int i = 0; i < n; i++) {
+                    Thread.sleep(500);
+                    mUIHandler.sendEmptyMessage(UPDATE_RECORDING_TEXT);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                stopRecording();
+            }
+        }
+    });
+
     public WAVRecorder(Context context, String path, int millis, Handler handler) {
         bufferSize = (int) (AudioRecord.getMinBufferSize(RECORDER_SAMPLERATE,
                 RECORDER_CHANNELS, RECORDER_AUDIO_ENCODING) * updateDuration * 3);
         this.mContext = context;
         mUIHandler = handler;
         output = Environment.getExternalStorageDirectory() + "/" + path;
-        if (millis < 1000)
+        final int max = 20 * 1000; // max duration
+        if (millis < 0)
+            millis = max;
+        else if (millis < 1000)
             millis = 1000;
+        else if (millis > max)
+            millis = max;
         n = millis % 500 == 0 ? millis / 500 : millis / 500 + 1;
 
     }
 
-    @Override
-    public void run() {
-        super.run();
-        startRecording();
-        try {
-            for (int i = 0; i < n; i++) {
-                Thread.sleep(500);
-                mUIHandler.sendEmptyMessage(UPDATE_RECORDING_TEXT);
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            stopRecording();
-        }
-    }
 
     private String getFilename() {
         return (output);
@@ -105,6 +111,7 @@ public class WAVRecorder extends Thread {
             }
         }, "AudioRecorder Thread");
 
+        timer.start();
         recordingThread.start();
     }
 

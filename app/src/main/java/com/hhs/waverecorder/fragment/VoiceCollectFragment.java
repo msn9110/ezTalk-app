@@ -199,7 +199,7 @@ public class VoiceCollectFragment extends Fragment implements
                     volView.addView(circle);
                     isRecord = true;
                     Log.d(TAG, "Start Recording");
-                    recorder.start();
+                    recorder.startRecording();
                 }
                 break;
 
