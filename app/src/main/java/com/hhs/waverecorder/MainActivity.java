@@ -1,10 +1,13 @@
 package com.hhs.waverecorder;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.NavigationView;
@@ -17,22 +20,15 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Toast;
 
 import com.example.hhs.wavrecorder.R;
 import com.hhs.waverecorder.fragment.RecognitionFragment;
 import com.hhs.waverecorder.fragment.VoiceCollectFragment;
 
-import org.json.JSONException;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-
-import static com.hhs.waverecorder.utils.Utils.readJSONStream;
 import static com.hhs.waverecorder.AppValue.*;
 
 
@@ -43,12 +39,25 @@ public class MainActivity extends AppCompatActivity
 
     private Context mContext;
 
-    private String czTable, zcTable;
-
     NavigationView navigationView;
     DrawerLayout drawer;
 
     Fragment currentFragment = null;
+
+    final int UPDATE_FRAGMENT = 7;
+
+    @SuppressLint("HandlerLeak")
+    Handler mHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what) {
+                case UPDATE_FRAGMENT:
+                    drawer.closeDrawer(Gravity.START);
+                    break;
+            }
+        }
+    };
 
 
     @Override
@@ -81,22 +90,14 @@ public class MainActivity extends AppCompatActivity
         };
         drawer.addDrawerListener(toggle);
         toggle.syncState();
-
-
     }
 
     @Override
     protected void onStart() {
         super.onStart();
         Log.i(TAG, "onStart");
-        long start = System.currentTimeMillis();
-        readTable();
-        double duration = (double) (System.currentTimeMillis() - start) / 1000;
-        Toast.makeText(mContext, "Loading Time : " + String.valueOf(duration) + " sec",
-                Toast.LENGTH_SHORT).show();
-
         if (currentFragment == null)
-            replaceFragment(RecognitionFragment.newInstance(czTable, zcTable));
+            replaceFragment(new RecognitionFragment());
     }
 
     @Override
@@ -126,11 +127,12 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void replaceFragment(Fragment mFragment) {
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        FragmentTransaction transaction = fragmentManager.beginTransaction();
-        transaction.replace(R.id.fragment_container, mFragment);
-        transaction.commit();
-        currentFragment = mFragment;
+        if (mFragment != null) {
+            FragmentManager fragmentManager = getSupportFragmentManager();
+            FragmentTransaction transaction = fragmentManager.beginTransaction();
+            transaction.replace(R.id.fragment_container, mFragment).addToBackStack(null).commit();
+            currentFragment = mFragment;
+        }
     }
 
     @Override
@@ -169,46 +171,23 @@ public class MainActivity extends AppCompatActivity
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation view item clicks here.
+
         int id = item.getItemId();
-        long start;
         Fragment mFragment = null;
         switch (id) {
             case R.id.nav_fragment_data_collect:
-                mFragment = VoiceCollectFragment.newInstance(czTable);
+                mFragment = new VoiceCollectFragment();
                 break;
 
             case R.id.nav_fragment_recognition:
-                mFragment = RecognitionFragment.newInstance(czTable, zcTable);
+                mFragment = new RecognitionFragment();
                 break;
         }
 
-        start = System.currentTimeMillis();
-        if (mFragment != null)  replaceFragment(mFragment);
-        Log.d(TAG, String.valueOf(System.currentTimeMillis() - start));
-
-        drawer.closeDrawer(GravityCompat.START);
+        replaceFragment(mFragment);
+        mHandler.sendEmptyMessage(UPDATE_FRAGMENT); // 避免收navigation view卡住
         return true;
     }
 
-    // read two tables
-    private void readTable() {
-        try {
-            File pronounceToWord = new File(mContext.getFilesDir(), ZCTABLE);
-            InputStream dictStream;
-            if (pronounceToWord.exists())
-                dictStream = mContext.openFileInput(ZCTABLE);
-            else
-                dictStream = mContext.getAssets().open(ZCTABLE);
-            zcTable = readJSONStream(dictStream).toString();
-            File myDic = new File(mContext.getFilesDir(), CZTABLE);
-            if (myDic.exists())
-                dictStream = mContext.openFileInput(CZTABLE);
-            else
-                dictStream = mContext.getAssets().open(CZTABLE);
-            czTable = readJSONStream(dictStream).toString();
-        } catch (IOException | JSONException e) {
-            e.printStackTrace();
-        }
-    }
 
 }

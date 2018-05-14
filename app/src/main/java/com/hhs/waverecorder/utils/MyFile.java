@@ -75,6 +75,7 @@ public class MyFile {
     
     public static void writeStringToFile(String content, File file) {
         try {
+            file.getParentFile().mkdirs();
             FileOutputStream outputStream = new FileOutputStream(file);
             BufferedWriter myWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
             myWriter.write(content);

@@ -54,6 +54,7 @@ import java.util.Locale;
 
 import static com.hhs.waverecorder.AppValue.*;
 import static com.hhs.waverecorder.utils.Utils.lookTable;
+import static com.hhs.waverecorder.utils.Utils.readTables;
 import static com.hhs.waverecorder.utils.Utils.sortJSONArrayByCount;
 
 @SuppressWarnings("all")
@@ -169,7 +170,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         btnRec.setOnClickListener(this);
 
         // For EditText or TextView
-        txtMsg.setFocusable(false);
         txtMsg.setOnCursorChangedListener(this);
         txtMsg.addTextChangedListener(textWatcher);
 
@@ -220,15 +220,15 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate : " + Thread.currentThread().getId());
-        Bundle args = getArguments();
+        mContext = getActivity();
+        eventReceiver.setOnListener(this);
         try {
-            czTable = new JSONObject(args.getString("czJSONString"));
-            zcTable = new JSONObject(args.getString("zcJSONString"));
+            JSONObject tables = readTables(mContext);
+            czTable = tables.getJSONObject("czTable");
+            zcTable = tables.getJSONObject("zcTable");
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        mContext = getActivity();
-        eventReceiver.setOnListener(this);
     }
 
     @Nullable
@@ -261,12 +261,12 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     private void storeTable() {
         if (zcTable != null) {
             String outStr = zcTable.toString().replaceAll("(\\},)", "$0\n");
-            MyFile.writeStringToFile(outStr, new File(mContext.getFilesDir(), ZCTABLE));
+            MyFile.writeStringToFile(outStr, new File(Environment.getExternalStoragePublicDirectory("tables"), ZCTABLE));
         }
 
         if (czTable != null) {
             String outStr = czTable.toString().replaceAll("(\\],)", "$0\n");
-            MyFile.writeStringToFile(outStr, new File(mContext.getFilesDir(), CZTABLE));
+            MyFile.writeStringToFile(outStr, new File(Environment.getExternalStoragePublicDirectory("tables"), CZTABLE));
         }
     }
 
@@ -565,22 +565,24 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 } else {
                     noToneLabelList.set(msgPos, noToneLabel);
                 }
-                lvWordsItemClick(select, false);
+                lvWordsItemClick(select, msgPos == txtMsg.length());
                 break;
         }
     }
 
-    private void lvWordsItemClick(String word, boolean longClick) {
+    private void lvWordsItemClick(String word, boolean changeCursor) {
         int msgPos = txtMsg.getSelectionStart();
         String msg = txtMsg.getText().toString();
         String part1 = msg.substring(0, msgPos);
         String part2 = (msgPos + 1 > msg.length()) ? "" : msg.substring(msgPos + 1, msg.length());
-        if (longClick) // insert word by list
+        if (changeCursor) // insert word by list
             part2 = msg.substring(msgPos, msg.length());
         String text = part1 + word + part2; // modify the word behind cursor
         txtMsg.setText(text); // will trigger STEP 6 TextWatcher
-        if (isVoiceInput || longClick)
+        if (isVoiceInput || changeCursor)
             txtMsg.setSelection(part1.length() + word.length()); // trigger onCursorChangedevent
+        else
+            txtMsg.setSelection(part1.length());
     }
 
     @Override

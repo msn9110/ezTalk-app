@@ -46,6 +46,7 @@ import java.util.Locale;
 import static com.hhs.waverecorder.AppValue.*;
 import static com.hhs.waverecorder.utils.MyFile.moveFile;
 import static com.hhs.waverecorder.utils.Utils.lookTable;
+import static com.hhs.waverecorder.utils.Utils.readTables;
 
 @SuppressWarnings("all")
 public class VoiceCollectFragment extends Fragment implements
@@ -151,14 +152,13 @@ public class VoiceCollectFragment extends Fragment implements
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate : " + Thread.currentThread().getId());
-        Bundle args = getArguments();
+        mContext = getActivity();
+        eventReceiver.setOnListener(this);
         try {
-            czTable = new JSONObject(args.getString("czJSONString"));
+            czTable = readTables(mContext).getJSONObject("czTable");
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        mContext = getActivity();
-        eventReceiver.setOnListener(this);
     }
 
     @Nullable

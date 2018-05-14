@@ -1,10 +1,15 @@
 package com.hhs.waverecorder.utils;
 
+import android.content.Context;
+import android.os.Environment;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -12,6 +17,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+
+import static com.hhs.waverecorder.AppValue.CZTABLE;
+import static com.hhs.waverecorder.AppValue.ZCTABLE;
 
 public final class Utils {
     public static JSONArray sortJSONArrayByCount(JSONArray jsonArray, final boolean ascending) throws JSONException {
@@ -64,6 +72,31 @@ public final class Utils {
             candidate.add(jsonArray.getJSONObject(i).keys().next());
         }
         return candidate;
+    }
+
+    // read two tables
+    public static JSONObject readTables(Context context) {
+        JSONObject tables = new JSONObject();
+        try {
+            File pronounceToWord = new File(Environment.getExternalStoragePublicDirectory("tables"), ZCTABLE);
+            InputStream dictStream;
+            if (pronounceToWord.exists())
+                dictStream = new FileInputStream(pronounceToWord);
+            else
+                dictStream = context.getAssets().open(ZCTABLE);
+            JSONObject zcTable = readJSONStream(dictStream);
+            tables.put("zcTable", zcTable);
+            File myDic = new File(Environment.getExternalStoragePublicDirectory("tables"), CZTABLE);
+            if (myDic.exists())
+                dictStream = new FileInputStream(myDic);
+            else
+                dictStream = context.getAssets().open(CZTABLE);
+            JSONObject czTable = readJSONStream(dictStream);
+            tables.put("czTable", czTable);
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+        }
+        return tables;
     }
 
 }
