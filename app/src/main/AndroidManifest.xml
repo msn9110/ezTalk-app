@@ -13,8 +13,10 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
-        android:screenOrientation="nosensor">
-        <activity android:name="com.hhs.waverecorder.MainActivity">
+        android:screenOrientation="nosensor"
+        android:windowSoftInputMode="stateAlwaysHidden">
+        <activity android:name="com.hhs.waverecorder.MainActivity"
+            android:windowSoftInputMode="stateAlwaysHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

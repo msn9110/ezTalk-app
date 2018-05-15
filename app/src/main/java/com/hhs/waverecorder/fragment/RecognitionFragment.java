@@ -23,6 +23,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ListView;
@@ -100,10 +101,12 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     };
 
     //UI Variable
-    Spinner spRecognition, spMyLabel;
-    ListView lvWords, lvFunction;
+    Spinner spMyLabel;
+    ListView lvWords, lvResult;
+    int posForlvResult;
     MyText txtMsg;
     ImageButton btnRec;
+    Button btnTalk, btnClear;
     FrameLayout volView;
     VolumeCircle circle = null;
     TextView tvRecNOW;
@@ -159,15 +162,18 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         loadingPage.setTitle("載入資料中");
         loadingPage.setMessage("請稍候");
 
-        spRecognition = mView.findViewById(R.id.resultSpinner);
+        lvResult = mView.findViewById(R.id.lvResult);
         spMyLabel = mView.findViewById(R.id.pronouceSpinner);
-        lvWords = mView.findViewById(R.id.wordsList);
-        lvFunction = mView.findViewById(R.id.fuctionList);
+        lvWords = mView.findViewById(R.id.lvWords);
         txtMsg = mView.findViewById(R.id.txtMsg);
         btnRec = mView.findViewById(R.id.btnRec);
+        btnTalk = mView.findViewById(R.id.btnTalk);
+        btnClear = mView.findViewById(R.id.btnClear);
 
         // For Button
         btnRec.setOnClickListener(this);
+        btnTalk.setOnClickListener(this);
+        btnClear.setOnClickListener(this);
 
         // For EditText or TextView
         txtMsg.setOnCursorChangedListener(this);
@@ -178,11 +184,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         recognitionList.add("ㄧ");
         recognitionList.add("ㄨㄛ");
         recognitionList.add("ㄋㄧ");
-        ArrayList<String> fList = new ArrayList<>(Arrays.asList("talk", "刪除"));
-
-        ArrayAdapter<String> ad1 = new ArrayAdapter<>(mContext, android.R.layout.simple_list_item_1, fList);
-        lvFunction.setAdapter(ad1);
-        lvFunction.setOnItemClickListener(this);
 
         ad2 = new ArrayAdapter<String>(mContext, android.R.layout.simple_list_item_1, wordList){
             @NonNull
@@ -202,11 +203,24 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         lvWords.setAdapter(ad2);
         lvWords.setOnItemClickListener(this);
 
-        ad3 = new ArrayAdapter<>(mContext, R.layout.myspinner, recognitionList);
-        spRecognition.setAdapter(ad3);
-        ad3.setDropDownViewResource(R.layout.myspinner);
-        spRecognition.setOnItemSelectedListener(this);
-        spRecognition.setSelection(0);
+        ad3 = new ArrayAdapter<String>(mContext, android.R.layout.simple_list_item_1, recognitionList){
+            @NonNull
+            @Override
+            public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                View view = super.getView(position, convertView, parent);
+
+                TextView textview = view.findViewById(android.R.id.text1);
+
+                //Set your Font Size Here.
+                textview.setTextSize(30);
+                textview.setGravity(Gravity.CENTER);
+
+                return view;
+            }
+        };
+        lvResult.setAdapter(ad3);
+        lvResult.setOnItemClickListener(this);
+        clickItem(lvResult, 0);
 
         displayLabelList.add("-");
         ad4 = new ArrayAdapter<>(mContext, R.layout.myspinner, displayLabelList);
@@ -396,7 +410,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         ad3.notifyDataSetChanged();
         ad4.notifyDataSetChanged();
         spMyLabel.setSelection(0);
-        spRecognition.setSelection(0);
+        clickItem(lvResult, 0);
         txtClear = false;
     }
 
@@ -495,26 +509,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
          String select = ((TextView) view).getText().toString();
 
          switch (adapterView.getId()) {
-             case R.id.resultSpinner: // ###STEP 4###
-                 wordList.clear();
-                 if (position == 0) { // ###STEP 4-1###
-                     ad2.notifyDataSetChanged();
-                     break;
-                 }
-                 try {
-                     JSONArray jsonArray = sortJSONArrayByCount(zcTable.getJSONArray(select), false);
-                     for (int i = 0; i < jsonArray.length(); i++) {
-                         String key = jsonArray.getJSONObject(i).keys().next();
-                         wordList.add(key);
-                     }
-                     ad2.notifyDataSetChanged();
-                     if (wordList.size() > 0) {
-                         clickItem(lvWords, 0); // ###STEP 4-1###
-                     }
-                 } catch (JSONException e) {
-                     e.printStackTrace();
-                 }
-                 break;
 
              case R.id.pronouceSpinner: // ###STEP 8###
                  if (position == 0) // ###STEP 8-1###
@@ -544,22 +538,31 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
         String select = ((TextView) view).getText().toString();
         switch (adapterView.getId()) {
-            case R.id.fuctionList:
-                switch (select) {
-                    case "talk":
-                        //talk();
-                        debug();
-                        break;
-                    case "刪除":
-                        txtClear = true;
-                        txtMsg.setText("");
-                        break;
+            case R.id.lvResult: // ###STEP 4###
+                wordList.clear();
+                posForlvResult = position;
+                if (position == 0) { // ###STEP 4-1###
+                    ad2.notifyDataSetChanged();
+                    break;
+                }
+                try {
+                    JSONArray jsonArray = sortJSONArrayByCount(zcTable.getJSONArray(select), false);
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        String key = jsonArray.getJSONObject(i).keys().next();
+                        wordList.add(key);
+                    }
+                    ad2.notifyDataSetChanged();
+                    if (wordList.size() > 0) {
+                        clickItem(lvWords, 0); // ###STEP 4-1###
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
                 }
                 break;
 
-            case R.id.wordsList: // ###STEP 5###
+            case R.id.lvWords: // ###STEP 5###
                 int msgPos = txtMsg.getSelectionStart();
-                String noToneLabel = ((TextView) spRecognition.getSelectedView()).getText().toString();
+                String noToneLabel = recognitionList.get(posForlvResult);
                 if (msgPos >= noToneLabelList.size()) {
                     noToneLabelList.add(noToneLabel);
                 } else {
@@ -601,6 +604,16 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                     recorder.startRecording(); // ###STEP 1-1###
                 }
                 break;
+
+            case R.id.btnTalk:
+                //talk();
+                debug();
+                break;
+
+            case R.id.btnClear:
+                txtClear = true;
+                txtMsg.setText("");
+                break;
         }
     }
 
@@ -641,12 +654,11 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                     }
                 }
             }
-            ad3 = new ArrayAdapter<>(mContext, R.layout.myspinner, recognitionList);
-            spRecognition.setAdapter(ad3);
+            ad3.notifyDataSetChanged();
             if (recognitionList.size() > 1) {
-                spRecognition.setSelection(1); // ###STEP 3-1###
+                clickItem(lvResult, 1); // ###STEP 3-1###
             } else {
-                spRecognition.setSelection(0); // ###STEP 3-1###
+                clickItem(lvResult, 1); // ###STEP 3-1###
             }
         } catch (JSONException e) {
             e.printStackTrace();
