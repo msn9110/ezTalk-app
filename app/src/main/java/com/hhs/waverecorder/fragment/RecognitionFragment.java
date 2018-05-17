@@ -51,14 +51,16 @@ import org.json.JSONObject;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
 
 import static com.hhs.waverecorder.AppValue.*;
+import static com.hhs.waverecorder.utils.Utils.getTone;
 import static com.hhs.waverecorder.utils.Utils.lookTable;
 import static com.hhs.waverecorder.utils.Utils.readTables;
 import static com.hhs.waverecorder.utils.Utils.sortJSONArrayByCount;
+import static com.hhs.waverecorder.utils.Utils.storeTable;
+import static com.hhs.waverecorder.utils.Utils.updateOAO;
 
 @SuppressWarnings("all")
 public class RecognitionFragment extends Fragment implements AdapterView.OnItemSelectedListener,
@@ -256,23 +258,15 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     public void onStop() {
         super.onStop();
         mContext.unregisterReceiver(eventReceiver);
-        storeTable();
-    }
-
-    // store ZCTABLE CZTABLE
-    private void storeTable() {
-        if (zcTable != null) {
-            String outStr = zcTable.toString().replaceAll("(\\},)", "$0\n");
-            MyFile.writeStringToFile(outStr, new File(Environment.getExternalStoragePublicDirectory("tables"), ZCTABLE));
-        }
-
-        if (czTable != null) {
-            String outStr = czTable.toString().replaceAll("(\\],)", "$0\n");
-            MyFile.writeStringToFile(outStr, new File(Environment.getExternalStoragePublicDirectory("tables"), CZTABLE));
+        try {
+            JSONObject tables = new JSONObject()
+                                .put("zcTable", zcTable)
+                                .put("czTable", czTable);
+            storeTable(tables);
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
     }
-
-
 
     // update word frequency
     private void updateFrequency() throws JSONException {
@@ -295,24 +289,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         }
     }
 
-    // update the count of an object in array of an object
-    private JSONObject updateOAO(String key1, String key2, JSONObject item, String strIndex) throws JSONException {
-        int count;
-        JSONArray itemJSONArray = item.getJSONArray(strIndex);
-        JSONObject changedItem = new JSONObject("{\"" + key2 + "\" : 1}"); // default value of array
-        int index = itemJSONArray.length(); // default index of array
-        for (int j = 0; j < index; j++) {
-            JSONObject find = itemJSONArray.getJSONObject(j);
-            if (key2.contentEquals(find.keys().next())) {
-                count = find.getInt(key2) + 1;
-                changedItem = find.put(key2, count);
-                index = j;
-                break;
-            }
-        }
-        itemJSONArray.put(index, changedItem);
-        return item.put(key1, itemJSONArray);
-    }
 
     private void talk() {
         JSONObject packet = new JSONObject();
@@ -355,29 +331,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         }
     }
 
-    // to get pronounce tone
-    private int getTone(String pronounce) {
-        String toneChar = pronounce.substring(pronounce.length() - 1, pronounce.length());
-        int tone;
-        switch (toneChar) {
-            case "˙":
-                tone = 0;
-                break;
-            case "ˊ":
-                tone = 2;
-                break;
-            case "ˇ":
-                tone = 3;
-                break;
-            case "ˋ":
-                tone = 4;
-                break;
-            default:
-                tone = 1;
-                break;
-        }
-        return tone;
-    }
 
     // software to trigger ListView onItemClick event
     private void clickItem(ListView listView, int pos) {
@@ -410,7 +363,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         int cursor;
         @Override
         public void beforeTextChanged(CharSequence s, int start, int beforecount, int aftercount) {
-            cursor = txtMsg.getSelectionStart();
+            cursor = txtMsg.getSelectionEnd();
         }
 
         @Override
@@ -461,7 +414,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     public void onCursorChanged(View view) {
         switch (view.getId()) {
             case R.id.txtMsg: // ###STEP 7###
-                int position = txtMsg.getSelectionStart();
+                int position = txtMsg.getSelectionEnd();
                 String msg = txtMsg.getText().toString();
                 String character = (position - 1 < 0) ? "" : msg.substring(position - 1, position);
                 displayLabelList.clear();
@@ -503,7 +456,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
              case R.id.pronouceSpinner: // ###STEP 8###
                  if (position == 0) // ###STEP 8-1###
                      break;
-                 int msgPos = txtMsg.getSelectionStart();
+                 int msgPos = txtMsg.getSelectionEnd();
                  // ###STEP 8-1###
                  if (msgPos >= myLabelList.size()) {
                      myLabelList.add(select);
@@ -552,7 +505,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 break;
 
             case R.id.lvWords: // ###STEP 5###
-                int msgPos = txtMsg.getSelectionStart();
+                int msgPos = txtMsg.getSelectionEnd();
                 String noToneLabel = recognitionList.get(ad3.getSelectPosition());
                 if (msgPos >= noToneLabelList.size()) {
                     noToneLabelList.add(noToneLabel);
@@ -566,7 +519,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     }
 
     private void lvWordsItemClick(String word, boolean changeCursor) {
-        int msgPos = txtMsg.getSelectionStart();
+        int msgPos = txtMsg.getSelectionEnd();
         String msg = txtMsg.getText().toString();
         String part1 = msg.substring(0, msgPos);
         String part2 = (msgPos + 1 > msg.length()) ? "" : msg.substring(msgPos + 1, msg.length());
@@ -623,7 +576,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         circle = null;
         // non UI
         isVoiceInput = true;
-        waveFiles.add(txtMsg.getSelectionStart(), path);
+        waveFiles.add(txtMsg.getSelectionEnd(), path);
         new Recognition(mContext, path, mUIHandler).start(); // ###STEP 2-1###
     }
 

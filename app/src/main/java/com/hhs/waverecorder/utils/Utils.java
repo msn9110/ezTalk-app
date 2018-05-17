@@ -99,4 +99,69 @@ public final class Utils {
         return tables;
     }
 
+
+    // update the count of an object in array of an object
+    public static JSONObject updateOAO(String key1, String key2, JSONObject item, String strIndex) throws JSONException {
+        int count;
+        JSONArray itemJSONArray = item.getJSONArray(strIndex);
+        JSONObject changedItem = new JSONObject("{\"" + key2 + "\" : 1}"); // default value of array
+        int index = itemJSONArray.length(); // default index of array
+        for (int j = 0; j < index; j++) {
+            JSONObject find = itemJSONArray.getJSONObject(j);
+            if (key2.contentEquals(find.keys().next())) {
+                count = find.getInt(key2) + 1;
+                changedItem = find.put(key2, count);
+                index = j;
+                break;
+            }
+        }
+        itemJSONArray.put(index, changedItem);
+        return item.put(key1, itemJSONArray);
+    }
+
+    // store ZCTABLE CZTABLE
+    public static void storeTable(JSONObject table) {
+        JSONObject zcTable = null, czTable = null;
+
+        try {
+            zcTable = table.getJSONObject("zcTable");
+            czTable = table.getJSONObject("czTable");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        if (zcTable != null) {
+            String outStr = zcTable.toString().replaceAll("(\\},)", "$0\n");
+            MyFile.writeStringToFile(outStr, new File(Environment.getExternalStoragePublicDirectory("tables"), ZCTABLE));
+        }
+
+        if (czTable != null) {
+            String outStr = czTable.toString().replaceAll("(\\],)", "$0\n");
+            MyFile.writeStringToFile(outStr, new File(Environment.getExternalStoragePublicDirectory("tables"), CZTABLE));
+        }
+    }
+
+    // to get pronounce tone
+    public static int getTone(String pronounce) {
+        String toneChar = pronounce.substring(pronounce.length() - 1, pronounce.length());
+        int tone;
+        switch (toneChar) {
+            case "˙":
+                tone = 0;
+                break;
+            case "ˊ":
+                tone = 2;
+                break;
+            case "ˇ":
+                tone = 3;
+                break;
+            case "ˋ":
+                tone = 4;
+                break;
+            default:
+                tone = 1;
+                break;
+        }
+        return tone;
+    }
+
 }
