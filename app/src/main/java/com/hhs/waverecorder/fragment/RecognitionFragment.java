@@ -3,7 +3,6 @@ package com.hhs.waverecorder.fragment;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.IntentFilter;
-import android.graphics.drawable.ColorDrawable;
 import android.media.MediaScannerConnection;
 import android.os.Bundle;
 import android.os.Environment;
@@ -18,7 +17,6 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -27,7 +25,6 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ListView;
-import android.widget.PopupWindow;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -109,12 +106,10 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     ListView lvWords, lvResult;
     MyText txtMsg;
     ImageButton btnRec;
-    Button btnTalk, btnClear;
+    Button btnTalk, btnClear, btnBack, btnMoveCursor;
     FrameLayout volView;
     VolumeCircle circle = null;
     TextView tvRecNOW;
-    View recordingView;
-    PopupWindow popupWindow;
     ProgressDialog loadingPage;
     ArrayList<String> recognitionList = new ArrayList<>(); // to store recognition zhuyin without tone
     ArrayList<String> wordList = new ArrayList<>(); // to show all possible chinese word according to selected no tone zhuyin
@@ -147,19 +142,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         volView = mView.findViewById(R.id.volume);
         tvRecNOW = mView.findViewById(R.id.tvRecNOW);
 
-        // popup window
-        LayoutInflater inflater = LayoutInflater.from(mContext);
-        recordingView = inflater.inflate(R.layout.recording_now, null);
-        popupWindow = new PopupWindow(recordingView, width/4, height/4, true);
-        popupWindow.setTouchable(true);
-        popupWindow.setTouchInterceptor(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent motionEvent) {
-                return true;
-            }
-        });
-        popupWindow.setBackgroundDrawable(new ColorDrawable(0x000000));
-
         // loading page
         loadingPage = new ProgressDialog(mContext);
         loadingPage.setProgressStyle(ProgressDialog.STYLE_SPINNER);
@@ -173,11 +155,15 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         btnRec = mView.findViewById(R.id.btnRec);
         btnTalk = mView.findViewById(R.id.btnTalk);
         btnClear = mView.findViewById(R.id.btnClear);
+        btnBack = mView.findViewById(R.id.btnBack);
+        btnMoveCursor = mView.findViewById(R.id.btnMoveCursor);
 
         // For Button
         btnRec.setOnClickListener(this);
         btnTalk.setOnClickListener(this);
         btnClear.setOnClickListener(this);
+        btnBack.setOnClickListener(this);
+        btnMoveCursor.setOnClickListener(this);
 
         // For EditText or TextView
         txtMsg.setOnCursorChangedListener(this);
@@ -392,7 +378,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 }
             } else if (!insertMode) { // delete
                 if (!txtClear) {
-                    for (int i = start; i < endPos; i++) {
+                    for (int i = start - 1; i < endPos - 1; i++) {
                         waveFiles.remove(i);
                         myLabelList.remove(i);
                         noToneLabelList.remove(i);
@@ -558,6 +544,21 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
             case R.id.btnClear:
                 txtClear = true;
                 txtMsg.setText("");
+                break;
+
+            case R.id.btnMoveCursor:
+                txtMsg.setSelection((txtMsg.getSelectionEnd() + 1) % (txtMsg.length() + 1));
+                break;
+
+            case R.id.btnBack:
+                int cursorPos = txtMsg.getSelectionEnd();
+                if (cursorPos > 0) {
+                    String msg = txtMsg.getText().toString();
+                    String part1 = msg.substring(0, cursorPos - 1);
+                    String part2 = msg.substring(cursorPos);
+                    txtMsg.setText(part1 + part2); // trigger STEP 6
+                    txtMsg.setSelection(cursorPos - 1); // trigger STEP 7
+                }
                 break;
         }
     }
