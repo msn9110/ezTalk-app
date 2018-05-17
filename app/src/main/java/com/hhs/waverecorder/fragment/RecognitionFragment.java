@@ -32,6 +32,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.example.hhs.wavrecorder.R;
+import com.hhs.waverecorder.adapter.RadioItemViewAdapter;
+import com.hhs.waverecorder.adapter.ViewHolder;
 import com.hhs.waverecorder.core.Recognition;
 import com.hhs.waverecorder.core.Updater;
 import com.hhs.waverecorder.core.WAVRecorder;
@@ -103,7 +105,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     //UI Variable
     Spinner spMyLabel;
     ListView lvWords, lvResult;
-    int posForlvResult;
     MyText txtMsg;
     ImageButton btnRec;
     Button btnTalk, btnClear;
@@ -119,7 +120,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     ArrayList<String> myLabelList = new ArrayList<>(); // store the choice for displayLabelList
     ArrayList<String> noToneLabelList = new ArrayList<>(); // store choice for recognitionList
     ArrayList<String> waveFiles = new ArrayList<>(); // store path of recording wave file if input is not by recording will store ""
-    ArrayAdapter<String> ad2, ad3, ad4;
+    ArrayAdapter<String> ad2, ad4;
+    RadioItemViewAdapter ad3;
 
     //Global Data
     JSONObject zcTable, czTable/*chineseToZhuyin*/;
@@ -203,21 +205,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         lvWords.setAdapter(ad2);
         lvWords.setOnItemClickListener(this);
 
-        ad3 = new ArrayAdapter<String>(mContext, android.R.layout.simple_list_item_1, recognitionList){
-            @NonNull
-            @Override
-            public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-                View view = super.getView(position, convertView, parent);
-
-                TextView textview = view.findViewById(android.R.id.text1);
-
-                //Set your Font Size Here.
-                textview.setTextSize(30);
-                textview.setGravity(Gravity.CENTER);
-
-                return view;
-            }
-        };
+        ad3 = new RadioItemViewAdapter(mContext, recognitionList);
         lvResult.setAdapter(ad3);
         lvResult.setOnItemClickListener(this);
         clickItem(lvResult, 0);
@@ -394,6 +382,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     // software to trigger ListView onItemClick event
     private void clickItem(ListView listView, int pos) {
         listView.performItemClick(listView.getAdapter().getView(pos, null, null), pos, pos);
+        if (listView == lvResult)
+            ad3.setSelectPosition(pos);
     }
 
     // For Clear
@@ -536,16 +526,17 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
      // For ListView onItemClick event handler
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-        String select = ((TextView) view).getText().toString();
+        String select;
         switch (adapterView.getId()) {
             case R.id.lvResult: // ###STEP 4###
                 wordList.clear();
-                posForlvResult = position;
+                ad3.setSelectPosition(position);
                 if (position == 0) { // ###STEP 4-1###
                     ad2.notifyDataSetChanged();
                     break;
                 }
                 try {
+                    select = ((ViewHolder) view.getTag()).name.getText().toString();
                     JSONArray jsonArray = sortJSONArrayByCount(zcTable.getJSONArray(select), false);
                     for (int i = 0; i < jsonArray.length(); i++) {
                         String key = jsonArray.getJSONObject(i).keys().next();
@@ -562,12 +553,13 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
             case R.id.lvWords: // ###STEP 5###
                 int msgPos = txtMsg.getSelectionStart();
-                String noToneLabel = recognitionList.get(posForlvResult);
+                String noToneLabel = recognitionList.get(ad3.getSelectPosition());
                 if (msgPos >= noToneLabelList.size()) {
                     noToneLabelList.add(noToneLabel);
                 } else {
                     noToneLabelList.set(msgPos, noToneLabel);
                 }
+                select = ((TextView) view).getText().toString();
                 lvWordsItemClick(select, msgPos == txtMsg.length());
                 break;
         }

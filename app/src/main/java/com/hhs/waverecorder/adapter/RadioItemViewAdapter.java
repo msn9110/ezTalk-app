@@ -12,20 +12,23 @@ import com.example.hhs.wavrecorder.R;
 
 import java.util.List;
 
-public class MyAdapter extends BaseAdapter {
+public class RadioItemViewAdapter extends BaseAdapter {
     Context context;
     List<String> myList;
     LayoutInflater mInflater;
     private int selectPosition = 0;
 
-    public MyAdapter(Context context,List<String> mList){
+    public RadioItemViewAdapter(Context context, List<String> mList){
         this.context = context;
         this.myList = mList;
-        mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
 
     public void setSelectPosition(int position) {
         this.selectPosition = position;
+    }
+    public int getSelectPosition() {
+        return selectPosition;
     }
     @Override
     public int getCount() {
@@ -44,12 +47,12 @@ public class MyAdapter extends BaseAdapter {
     @Override
     public View getView(final int position, View convertView, ViewGroup parent) {
 
-        ViewHolder viewHolder = null;
+        ViewHolder viewHolder;
         if(convertView == null){
             convertView = mInflater.inflate(R.layout.adapter_item,parent,false);
             viewHolder = new ViewHolder();
-            viewHolder.name = (TextView)convertView.findViewById(R.id.id_name);
-            viewHolder.select = (RadioButton)convertView.findViewById(R.id.id_select);
+            viewHolder.name = convertView.findViewById(R.id.id_name);
+            viewHolder.select = convertView.findViewById(R.id.id_select);
             convertView.setTag(viewHolder);
         } else{
             viewHolder = (ViewHolder)convertView.getTag();

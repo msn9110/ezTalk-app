@@ -2,12 +2,13 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:id="@+id/recnutton"
     xmlns:tools="http://schemas.android.com/tools">
     <FrameLayout
         android:layout_width="238dp"
         android:layout_height="238dp"
         android:layout_gravity="center|bottom"
-        android:layout_marginBottom="36dp"
+        android:layout_marginBottom="50dp"
         android:id="@+id/volume"
         tools:background="#70808080">
         <TextView
@@ -21,8 +22,6 @@
             android:id="@+id/tvRecNOW"/>
     </FrameLayout>
 
-
-
     <ImageButton
         android:id="@+id/btnRec"
         android:layout_width="wrap_content"
@@ -30,7 +29,7 @@
         android:src="@drawable/microphone"
         android:layout_gravity="center|bottom"
         android:background="@android:color/transparent"
-        android:layout_margin="86dp"
+        android:layout_margin="100dp"
         android:contentDescription="record" />
 
 </FrameLayout>
