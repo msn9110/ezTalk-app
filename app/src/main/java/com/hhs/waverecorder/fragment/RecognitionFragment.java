@@ -446,11 +446,13 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                  Log.d(TAG, "spinner : " + position);
                  if (position > 0) {
                      int msgPos = txtMsg.getSelectionEnd();
+                     boolean insertMode = msgPos == 0 || isVoiceInput || isInputBywordsList;
                      // ###STEP 8-1###
-                     if (msgPos > myLabelList.size()) {
-                         myLabelList.add(select);
-                     } else if (isVoiceInput) {
-                         myLabelList.add(msgPos, select);
+                     if (insertMode) {
+                         if (msgPos >= myLabelList.size())
+                             myLabelList.add(select);
+                         else
+                            myLabelList.add(msgPos - 1, select);
                      } else {
                          myLabelList.set(msgPos - 1, select);
                      }
