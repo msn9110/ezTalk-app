@@ -64,6 +64,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         AdapterView.OnItemClickListener, AdapterView.OnItemLongClickListener, View.OnClickListener,
         OnCursorChangedListener, VoiceInputListener {
 
+    // The method creating fragment pass some parameters
+    // Not used in this app
     public static RecognitionFragment newInstance(String czJSONString, String zcJSONString) {
         RecognitionFragment mFragment = new RecognitionFragment();
         Bundle args = new Bundle();
@@ -79,7 +81,9 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     View mView;
 
     //Important Variable
+    // The EventReceiver To trigger onFinishRecord and onFinishRecognition
     VoiceInputEventReceiver eventReceiver = new VoiceInputEventReceiver();
+    // callback for another thread access UI
     Handler mUIHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -214,8 +218,9 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate : " + Thread.currentThread().getId());
         mContext = getActivity();
-        eventReceiver.setOnListener(this);
+        eventReceiver.setOnListener(this); // callback setting
         try {
+            // read two dictionary
             JSONObject tables = readTables(mContext);
             czTable = tables.getJSONObject("czTable");
             zcTable = tables.getJSONObject("zcTable");
@@ -429,7 +434,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 }
 
                 ad4.notifyDataSetChanged();
-
                 spMyLabel.setSelection(selectedIndex, true);
                 break;
         }
@@ -489,6 +493,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         }
     }
 
+    // longClick indicates insert
     @Override
     public boolean onItemLongClick(AdapterView<?> adapterView, View view, int position, long l) {
         String select;
@@ -551,7 +556,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         String part2 = msg.substring(msgPos, msg.length());
         if (insertMode) // insert word by list
             part1 = msg.substring(0, msgPos);
-        String text = part1 + word + part2; // modify the word behind cursor
+        String text = part1 + word + part2; // modify the word in front of cursor
         Log.d(TAG, part1 + " + " + word + " + " + part2 + " : " + text);
         txtMsg.setText(text); // will trigger STEP 6 TextWatcher
         if (insertMode)
@@ -645,7 +650,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
             if (recognitionList.size() > 1) {
                 clickItem(lvResults, 1); // ###STEP 3-1###
             } else {
-                clickItem(lvResults, 1); // ###STEP 3-1###
+                clickItem(lvResults, 0); // ###STEP 3-1###
             }
         } catch (JSONException e) {
             e.printStackTrace();
