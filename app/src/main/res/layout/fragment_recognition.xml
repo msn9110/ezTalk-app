@@ -21,7 +21,7 @@
         <Spinner
             android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:id="@+id/pronouceSpinner">
+            android:id="@+id/pronounceSpinner">
 
         </Spinner>
         <LinearLayout
@@ -39,7 +39,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_weight="2"
-                    android:id="@+id/lvResult"
+                    android:id="@+id/lvResults"
                     tools:ignore="NestedWeights">
                 </ListView>
 

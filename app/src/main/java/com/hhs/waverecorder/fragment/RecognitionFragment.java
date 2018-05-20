@@ -103,7 +103,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
     //UI Variable
     Spinner spMyLabel;
-    ListView lvWords, lvResult;
+    ListView lvWords, lvResults;
     MyText txtMsg;
     ImageButton btnRec;
     Button btnTalk, btnClear, btnBack, btnMoveCursor;
@@ -112,7 +112,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     TextView tvRecNOW;
     ProgressDialog loadingPage;
     ArrayList<String> recognitionList = new ArrayList<>(); // to store recognition zhuyin without tone
-    ArrayList<String> wordList = new ArrayList<>(); // to show all possible chinese word according to selected no tone zhuyin
+    ArrayList<String> wordsList = new ArrayList<>(); // to show all possible chinese word according to selected no tone zhuyin
     ArrayList<String> displayLabelList = new ArrayList<>(); // to show all zhuyin with tone of the first chinese word behind cursor
     ArrayList<String> myLabelList = new ArrayList<>(); // store the choice for displayLabelList
     ArrayList<String> noToneLabelList = new ArrayList<>(); // store choice for recognitionList
@@ -127,8 +127,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     //State Variable
     private boolean isRecord = false;
     private boolean isVoiceInput = false;
-    private boolean isInputByWordList = false;
-    private boolean txtClear = false;
+    private boolean isInputBywordsList = false;
+    private boolean isClear = false;
     private boolean longClick = false;
     private int recordingDot = 0; // max 2
 
@@ -150,8 +150,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         loadingPage.setTitle("載入資料中");
         loadingPage.setMessage("請稍候");
 
-        lvResult = mView.findViewById(R.id.lvResult);
-        spMyLabel = mView.findViewById(R.id.pronouceSpinner);
+        lvResults = mView.findViewById(R.id.lvResults);
+        spMyLabel = mView.findViewById(R.id.pronounceSpinner);
         lvWords = mView.findViewById(R.id.lvWords);
         txtMsg = mView.findViewById(R.id.txtMsg);
         btnRec = mView.findViewById(R.id.btnRec);
@@ -177,7 +177,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         recognitionList.add("ㄨㄛ");
         recognitionList.add("ㄋㄧ");
 
-        ad2 = new ArrayAdapter<String>(mContext, android.R.layout.simple_list_item_1, wordList){
+        ad2 = new ArrayAdapter<String>(mContext, android.R.layout.simple_list_item_1, wordsList){
             @NonNull
             @Override
             public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
@@ -197,9 +197,9 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         lvWords.setOnItemLongClickListener(this);
 
         ad3 = new RadioItemViewAdapter(mContext, recognitionList);
-        lvResult.setAdapter(ad3);
-        lvResult.setOnItemClickListener(this);
-        lvResult.setOnItemLongClickListener(this);
+        lvResults.setAdapter(ad3);
+        lvResults.setOnItemClickListener(this);
+        lvResults.setOnItemLongClickListener(this);
 
         displayLabelList.add("-");
         ad4 = new ArrayAdapter<>(mContext, R.layout.myspinner, displayLabelList);
@@ -324,7 +324,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     // software to trigger ListView onItemClick event
     private void clickItem(ListView listView, int pos) {
         listView.performItemClick(listView.getAdapter().getView(pos, null, null), pos, pos);
-        if (listView == lvResult)
+        if (listView == lvResults)
             ad3.setSelectPosition(pos);
     }
 
@@ -340,8 +340,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         ad3.notifyDataSetChanged();
         ad4.notifyDataSetChanged();
         spMyLabel.setSelection(0);
-        clickItem(lvResult, 0); // will affect wordList and ad2
-        txtClear = false;
+        clickItem(lvResults, 0); // will affect wordsList and ad2
+        isClear = false;
     }
 
     //====================UI Listener Start====================
@@ -358,7 +358,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
             boolean insertMode = aftercount > beforecount;
             start = cursor;
             int endPos = insertMode ? start + aftercount - beforecount : start + beforecount - aftercount;
-            if (insertMode && !isInputByWordList) { // insert mode
+            if (insertMode && !isInputBywordsList) { // insert mode
                 String addedText = s.toString().substring(start, endPos);
                 for (int i = start; i < endPos; i++) {
                     String ch = addedText.substring(i - start, i - start + 1);
@@ -378,7 +378,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                     }
                 }
             } else if (!insertMode) { // delete
-                if (!txtClear) {
+                if (!isClear) {
                     for (int i = start - 1; i < endPos - 1; i++) {
                         waveFiles.remove(i);
                         myLabelList.remove(i);
@@ -442,7 +442,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
          switch (adapterView.getId()) {
 
-             case R.id.pronouceSpinner: // ###STEP 8###
+             case R.id.pronounceSpinner: // ###STEP 8###
                  Log.d(TAG, "spinner : " + position);
                  if (position > 0) {
                      int msgPos = txtMsg.getSelectionEnd();
@@ -471,7 +471,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
         String select;
         switch (adapterView.getId()) {
-            case R.id.lvResult: // ###STEP 4###
+            case R.id.lvResults: // ###STEP 4###
                 select = ((ViewHolder) view.getTag()).name.getText().toString();
                 lvResultsItemClick(select, position, false);
                 break;
@@ -491,7 +491,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     public boolean onItemLongClick(AdapterView<?> adapterView, View view, int position, long l) {
         String select;
         switch (adapterView.getId()) {
-            case R.id.lvResult:
+            case R.id.lvResults:
                 select = ((ViewHolder) view.getTag()).name.getText().toString();
                 lvResultsItemClick(select, position, true);
                 break;
@@ -506,7 +506,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     }
 
     private void lvResultsItemClick(String select, int position, boolean longClick) {
-        wordList.clear();
+        wordsList.clear();
         ad3.setSelectPosition(position);
         if (position == 0) {
             ad2.notifyDataSetChanged();
@@ -517,10 +517,10 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
             JSONArray jsonArray = sortJSONArrayByCount(zcTable.getJSONArray(select), false);
             for (int i = 0; i < jsonArray.length(); i++) {
                 String key = jsonArray.getJSONObject(i).keys().next();
-                wordList.add(key);
+                wordsList.add(key);
             }
             ad2.notifyDataSetChanged();
-            if (wordList.size() > 0) {
+            if (wordsList.size() > 0) {
                 this.longClick = longClick;
                 clickItem(lvWords, 0);
                 this.longClick = false;
@@ -541,7 +541,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         if (!isVoiceInput && insertMode) {
             // insert by wordlist and not voice input
             waveFiles.add(msgPos, "");
-            isInputByWordList = true;
+            isInputBywordsList = true;
         }
 
         String msg = txtMsg.getText().toString();
@@ -581,7 +581,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 break;
 
             case R.id.btnClear:
-                txtClear = true;
+                isClear = true;
                 txtMsg.setText("");
                 break;
 
@@ -641,9 +641,9 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
             }
             ad3.notifyDataSetChanged();
             if (recognitionList.size() > 1) {
-                clickItem(lvResult, 1); // ###STEP 3-1###
+                clickItem(lvResults, 1); // ###STEP 3-1###
             } else {
-                clickItem(lvResult, 1); // ###STEP 3-1###
+                clickItem(lvResults, 1); // ###STEP 3-1###
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -653,7 +653,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     // ###STEP 9###
     private void onFinishAllStep() {
         isVoiceInput = false;
-        isInputByWordList = false;
+        isInputBywordsList = false;
     }
 
     private void debug() {
