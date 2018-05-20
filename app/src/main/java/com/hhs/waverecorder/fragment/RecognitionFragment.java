@@ -61,7 +61,7 @@ import static com.hhs.waverecorder.utils.Utils.updateOAO;
 
 @SuppressWarnings("all")
 public class RecognitionFragment extends Fragment implements AdapterView.OnItemSelectedListener,
-        AdapterView.OnItemClickListener, View.OnClickListener,
+        AdapterView.OnItemClickListener, AdapterView.OnItemLongClickListener, View.OnClickListener,
         OnCursorChangedListener, VoiceInputListener {
 
     public static RecognitionFragment newInstance(String czJSONString, String zcJSONString) {
@@ -127,7 +127,9 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     //State Variable
     private boolean isRecord = false;
     private boolean isVoiceInput = false;
+    private boolean isInputByWordList = false;
     private boolean txtClear = false;
+    private boolean longClick = false;
     private int recordingDot = 0; // max 2
 
     private void initUI() {
@@ -192,11 +194,12 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         };
         lvWords.setAdapter(ad2);
         lvWords.setOnItemClickListener(this);
+        lvWords.setOnItemLongClickListener(this);
 
         ad3 = new RadioItemViewAdapter(mContext, recognitionList);
         lvResult.setAdapter(ad3);
         lvResult.setOnItemClickListener(this);
-        clickItem(lvResult, 0);
+        lvResult.setOnItemLongClickListener(this);
 
         displayLabelList.add("-");
         ad4 = new ArrayAdapter<>(mContext, R.layout.myspinner, displayLabelList);
@@ -329,17 +332,15 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     private void clear() {
         displayLabelList.clear();
         waveFiles.clear();
-        wordList.clear();
         recognitionList.clear();
         myLabelList.clear();
         noToneLabelList.clear();
         recognitionList.add("-");
         displayLabelList.add("-");
-        ad2.notifyDataSetChanged();
         ad3.notifyDataSetChanged();
         ad4.notifyDataSetChanged();
         spMyLabel.setSelection(0);
-        clickItem(lvResult, 0);
+        clickItem(lvResult, 0); // will affect wordList and ad2
         txtClear = false;
     }
 
@@ -357,7 +358,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
             boolean insertMode = aftercount > beforecount;
             start = cursor;
             int endPos = insertMode ? start + aftercount - beforecount : start + beforecount - aftercount;
-            if (insertMode && !isVoiceInput) { // insert mode
+            if (insertMode && !isInputByWordList) { // insert mode
                 String addedText = s.toString().substring(start, endPos);
                 for (int i = start; i < endPos; i++) {
                     String ch = addedText.substring(i - start, i - start + 1);
@@ -406,6 +407,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 displayLabelList.clear();
                 displayLabelList.add("-");
                 int selectedIndex = 0;
+                Log.d(TAG, "onCursorChanged : " + position);
                 if (position > 0) {
                     Log.d(TAG, character);
                     try {
@@ -427,6 +429,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 }
 
                 ad4.notifyDataSetChanged();
+
                 spMyLabel.setSelection(selectedIndex, true);
                 break;
         }
@@ -440,19 +443,20 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
          switch (adapterView.getId()) {
 
              case R.id.pronouceSpinner: // ###STEP 8###
-                 if (position == 0) // ###STEP 8-1###
-                     break;
-                 int msgPos = txtMsg.getSelectionEnd();
-                 // ###STEP 8-1###
-                 if (msgPos >= myLabelList.size()) {
-                     myLabelList.add(select);
-                 } else if (isVoiceInput) {
-                     myLabelList.add(msgPos, select);
-                 } else {
-                     myLabelList.set(msgPos - 1, select);
+                 Log.d(TAG, "spinner : " + position);
+                 if (position > 0) {
+                     int msgPos = txtMsg.getSelectionEnd();
+                     // ###STEP 8-1###
+                     if (msgPos > myLabelList.size()) {
+                         myLabelList.add(select);
+                     } else if (isVoiceInput) {
+                         myLabelList.add(msgPos, select);
+                     } else {
+                         myLabelList.set(msgPos - 1, select);
+                     }
+                     onFinishAllStep();
                  }
 
-                 onFinishAllStep();
                  break;
          }
      }
@@ -468,55 +472,90 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         String select;
         switch (adapterView.getId()) {
             case R.id.lvResult: // ###STEP 4###
-                wordList.clear();
-                ad3.setSelectPosition(position);
-                if (position == 0) { // ###STEP 4-1###
-                    ad2.notifyDataSetChanged();
-                    break;
-                }
-                try {
-                    select = ((ViewHolder) view.getTag()).name.getText().toString();
-                    JSONArray jsonArray = sortJSONArrayByCount(zcTable.getJSONArray(select), false);
-                    for (int i = 0; i < jsonArray.length(); i++) {
-                        String key = jsonArray.getJSONObject(i).keys().next();
-                        wordList.add(key);
-                    }
-                    ad2.notifyDataSetChanged();
-                    if (wordList.size() > 0) {
-                        clickItem(lvWords, 0); // ###STEP 4-1###
-                    }
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+                select = ((ViewHolder) view.getTag()).name.getText().toString();
+                lvResultsItemClick(select, position, false);
                 break;
 
             case R.id.lvWords: // ###STEP 5###
                 int msgPos = txtMsg.getSelectionEnd();
-                String noToneLabel = recognitionList.get(ad3.getSelectPosition());
-                if (msgPos >= noToneLabelList.size()) {
-                    noToneLabelList.add(noToneLabel);
-                } else {
-                    noToneLabelList.set(msgPos, noToneLabel);
-                }
+
                 select = ((TextView) view).getText().toString();
-                lvWordsItemClick(select, msgPos == txtMsg.length());
+                // longClick or msgPos == 0 enter insert mode
+                boolean insertMode = isVoiceInput || longClick || msgPos == 0;
+                lvWordsItemClick(select, insertMode);
                 break;
         }
     }
 
-    private void lvWordsItemClick(String word, boolean changeCursor) {
+    @Override
+    public boolean onItemLongClick(AdapterView<?> adapterView, View view, int position, long l) {
+        String select;
+        switch (adapterView.getId()) {
+            case R.id.lvResult:
+                select = ((ViewHolder) view.getTag()).name.getText().toString();
+                lvResultsItemClick(select, position, true);
+                break;
+
+            case R.id.lvWords:
+                select = ((TextView) view).getText().toString();
+                String noToneLabel = recognitionList.get(ad3.getSelectPosition());
+                lvWordsItemClick(select, true);
+                break;
+        }
+        return false;
+    }
+
+    private void lvResultsItemClick(String select, int position, boolean longClick) {
+        wordList.clear();
+        ad3.setSelectPosition(position);
+        if (position == 0) {
+            ad2.notifyDataSetChanged();
+            return;
+        }
+        try {
+
+            JSONArray jsonArray = sortJSONArrayByCount(zcTable.getJSONArray(select), false);
+            for (int i = 0; i < jsonArray.length(); i++) {
+                String key = jsonArray.getJSONObject(i).keys().next();
+                wordList.add(key);
+            }
+            ad2.notifyDataSetChanged();
+            if (wordList.size() > 0) {
+                this.longClick = longClick;
+                clickItem(lvWords, 0);
+                this.longClick = false;
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+    private void lvWordsItemClick(String word, boolean insertMode) {
         int msgPos = txtMsg.getSelectionEnd();
+        String noToneLabel = recognitionList.get(ad3.getSelectPosition());
+        if (insertMode) {
+            noToneLabelList.add(msgPos, noToneLabel);
+        } else {
+            Log.d(TAG, "## lvWordsClick : " + msgPos);
+            noToneLabelList.set(msgPos - 1, noToneLabel);
+        }
+        if (!isVoiceInput && insertMode) {
+            // insert by wordlist and not voice input
+            waveFiles.add(msgPos, "");
+            isInputByWordList = true;
+        }
+
         String msg = txtMsg.getText().toString();
-        String part1 = msg.substring(0, msgPos);
-        String part2 = (msgPos + 1 > msg.length()) ? "" : msg.substring(msgPos + 1, msg.length());
-        if (changeCursor) // insert word by list
-            part2 = msg.substring(msgPos, msg.length());
+        String part1 = (msgPos == 0) ? "" : msg.substring(0, msgPos - 1);
+        String part2 = msg.substring(msgPos, msg.length());
+        if (insertMode) // insert word by list
+            part1 = msg.substring(0, msgPos);
         String text = part1 + word + part2; // modify the word behind cursor
+        Log.d(TAG, part1 + " + " + word + " + " + part2 + " : " + text);
         txtMsg.setText(text); // will trigger STEP 6 TextWatcher
-        if (isVoiceInput || changeCursor)
+        if (insertMode)
             txtMsg.setSelection(part1.length() + word.length()); // trigger onCursorChangedevent
         else
-            txtMsg.setSelection(part1.length());
+            txtMsg.setSelection(msgPos);
     }
 
     @Override
@@ -613,9 +652,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
     // ###STEP 9###
     private void onFinishAllStep() {
-        if (isVoiceInput) {
-            isVoiceInput = false;
-        }
+        isVoiceInput = false;
+        isInputByWordList = false;
     }
 
     private void debug() {
