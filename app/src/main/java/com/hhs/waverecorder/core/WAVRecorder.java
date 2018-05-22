@@ -16,6 +16,7 @@ import android.media.MediaScannerConnection;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
 import static com.hhs.waverecorder.AppValue.*;
 
@@ -49,14 +50,14 @@ public class WAVRecorder {
         @Override
         public void run() {
             try {
-                for (int i = 0; i < n; i++) {
+                for (int i = 0; i < n && isRecording; i++) {
                     Thread.sleep(500);
                     mUIHandler.sendEmptyMessage(UPDATE_RECORDING_TEXT);
                 }
+                if (isRecording)
+                    stopRecording();
             } catch (InterruptedException e) {
-                e.printStackTrace();
-            } finally {
-                stopRecording();
+                Log.d("TIMER", "STOP");
             }
         }
     });
@@ -194,6 +195,10 @@ public class WAVRecorder {
     }
 
     public void stopRecording() {
+        if (timer.isAlive()) {
+            timer.interrupt();
+        }
+
         if (null != recorder) {
             isRecording = false;
 
