@@ -79,13 +79,7 @@ public class VoiceCollectFragment extends Fragment implements
                 case UPDATE_VOLUME_CIRCLE:
                     int level = msg.arg1;
                     circle.setLevel(level);
-                    break;
-
-                case UPDATE_RECORDING_TEXT:
-                    String recordingMsg = "錄音中(" + circle.getLevel() + "%)";
-                    for (int i = 0; i <= recordingDot; i++)
-                        recordingMsg += ".";
-                    recordingDot = (recordingDot + 1) % 3;
+                    String recordingMsg = "錄音中(" + level + "%)";
                     tvRecNOW.setText(recordingMsg);
                     break;
             }
@@ -113,7 +107,6 @@ public class VoiceCollectFragment extends Fragment implements
     WAVRecorder recorder = null;
 
     //State Variable
-    private int recordingDot = 0; // max 2
 
     private void initUI() {
         // get resolution
@@ -199,7 +192,7 @@ public class VoiceCollectFragment extends Fragment implements
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.btnRec:
-                SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd-hhmmss", Locale.getDefault());
+                SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault());
                 String path = "MyRecorder/" + label + "/" + tone +
                         "-" + df.format(new Date()) + ".wav";
                 if (recorder == null && label.length() > 0) {

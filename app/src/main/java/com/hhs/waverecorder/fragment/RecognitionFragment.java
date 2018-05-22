@@ -92,13 +92,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 case UPDATE_VOLUME_CIRCLE:
                     int level = msg.arg1;
                     circle.setLevel(level);
-                    break;
-
-                case UPDATE_RECORDING_TEXT:
-                    String recordingMsg = "錄音中(" + circle.getLevel() + "%)";
-                    for (int i = 0; i <= recordingDot; i++)
-                        recordingMsg += ".";
-                    recordingDot = (recordingDot + 1) % 3;
+                    String recordingMsg = "錄音中(" + level + "%)";
                     tvRecNOW.setText(recordingMsg);
                     break;
             }
@@ -136,7 +130,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     private boolean isInputBywordsList = false;
     private boolean isClear = false;
     private boolean longClick = false;
-    private int recordingDot = 0; // max 2
 
     private void initUI() {
 
@@ -581,7 +574,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         switch (view.getId()) {
             case R.id.btnRec:
                 // ###STEP 1###
-                SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd-hhmmss", Locale.getDefault());
+                SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault());
                 String path = "MyRecorder/tmp/" + df.format(new Date()) + ".wav";
                 if (recorder == null) {
                     recorder = new WAVRecorder(mContext, path, 2500, mUIHandler);

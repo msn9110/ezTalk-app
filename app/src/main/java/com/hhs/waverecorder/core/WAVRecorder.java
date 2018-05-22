@@ -36,7 +36,7 @@ public class WAVRecorder {
     private int bufferSize = 0;
     private Thread recordingThread = null;
     private boolean isRecording = false;
-
+    private boolean stopByTimer = false;
     private String output;
     private Handler mUIHandler; // callback handler
     private double updateDuration = 1.0;
@@ -52,12 +52,15 @@ public class WAVRecorder {
             try {
                 for (int i = 0; i < n && isRecording; i++) {
                     Thread.sleep(500);
-                    mUIHandler.sendEmptyMessage(UPDATE_RECORDING_TEXT);
+                    //mUIHandler.sendEmptyMessage(UPDATE_RECORDING_TEXT);
                 }
-                if (isRecording)
-                    stopRecording();
             } catch (InterruptedException e) {
                 Log.d("TIMER", "STOP");
+            } finally {
+                if (isRecording) {
+                    stopByTimer = true;
+                    stopRecording();
+                }
             }
         }
     });
@@ -152,7 +155,8 @@ public class WAVRecorder {
                                 if (num > max)
                                     max = num;
                             }
-                            final int level = (int) ((double) max / BASE_VOLUME);
+                            int level = (int) ((double) max / BASE_VOLUME);
+                            if (level > 0) level += 1;
                             Message msg = new Message();
                             msg.what = UPDATE_VOLUME_CIRCLE; // volume level
                             msg.arg1 = level;
@@ -195,7 +199,7 @@ public class WAVRecorder {
     }
 
     public void stopRecording() {
-        if (timer.isAlive()) {
+        if (!stopByTimer && timer.isAlive()) {
             timer.interrupt();
         }
 
