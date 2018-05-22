@@ -9,7 +9,7 @@ import android.view.View;
 
 
 public class VolumeCircle extends View {
-    int level = 0; // max 10
+    int level = 0; // max 100
     float scale = (float) 1.0;
     public VolumeCircle(Context context, int level, int dpi) {
         super(context);
@@ -32,16 +32,20 @@ public class VolumeCircle extends View {
         pen.setAlpha(64);
 
         float x = (55 + 64) * scale;
-        float r = (34 + 4 * level) * scale;
+        float r = (float) ((34 + 0.8 * level) * scale);
 
         canvas.drawCircle(x, x, r, pen);
     }
 
     public void setLevel(int level) {
         this.level = (level < 0) ? 0 : level;
-        this.level = (level > 20) ? 20 : level;
+        this.level = (level > 100) ? 100 : level;
 
         // re-draw
         invalidate();
+    }
+
+    public int getLevel() {
+        return level;
     }
 }

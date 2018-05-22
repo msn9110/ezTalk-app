@@ -17,7 +17,7 @@
             android:textSize="30sp"
             android:layout_marginBottom="5dp"
             android:text=""
-            tools:text="錄音中..."
+            tools:text="錄音中(100%)..."
             android:layout_gravity="bottom|center"
             android:id="@+id/tvRecNOW"/>
     </FrameLayout>

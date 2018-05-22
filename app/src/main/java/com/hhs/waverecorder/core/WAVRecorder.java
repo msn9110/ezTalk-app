@@ -29,6 +29,8 @@ public class WAVRecorder {
     private static final int RECORDER_CHANNELS = AudioFormat.CHANNEL_IN_MONO;
     private static final int RECORDER_AUDIO_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
 
+    private static final double BASE_VOLUME = 327.67;
+
     private AudioRecord recorder = null;
     private int bufferSize = 0;
     private Thread recordingThread = null;
@@ -38,6 +40,10 @@ public class WAVRecorder {
     private Handler mUIHandler; // callback handler
     private double updateDuration = 1.0;
     private int n; // will recording n * 500 ms
+
+    public boolean isRecordNow() {
+        return isRecording;
+    }
 
     private Thread timer = new Thread(new Runnable() {
         @Override
@@ -61,7 +67,7 @@ public class WAVRecorder {
         this.mContext = context;
         mUIHandler = handler;
         output = Environment.getExternalStorageDirectory() + "/" + path;
-        final int max = 20 * 1000; // max duration
+        final int max = 40 * 1000; // max duration
         if (millis < 0)
             millis = max;
         else if (millis < 1000)
@@ -141,11 +147,11 @@ public class WAVRecorder {
                             for (int i = 0; i < copy.length / 2; i++) {
                                 short num = (short) ((((short) copy[2 * i + 1]) & 0xff) << 8);
                                 num += ((short) copy[2 * i]) & 0xff;
-                                num = (num >= 0) ? num : (short) -num;
+                                num = (num >= 0) ? num : (short) -num; // abs value
                                 if (num > max)
                                     max = num;
                             }
-                            final int level = max / 1638;
+                            final int level = (int) ((double) max / BASE_VOLUME);
                             Message msg = new Message();
                             msg.what = UPDATE_VOLUME_CIRCLE; // volume level
                             msg.arg1 = level;

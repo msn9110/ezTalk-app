@@ -95,7 +95,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                     break;
 
                 case UPDATE_RECORDING_TEXT:
-                    String recordingMsg = "錄音中";
+                    String recordingMsg = "錄音中(" + circle.getLevel() + "%)";
                     for (int i = 0; i <= recordingDot; i++)
                         recordingMsg += ".";
                     recordingDot = (recordingDot + 1) % 3;
@@ -128,8 +128,10 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     JSONObject zcTable, czTable/*chineseToZhuyin*/;
     int width, height, dpi; // device resolution in pixels used for UI
 
+    //Global Variable
+    WAVRecorder recorder = null;
+
     //State Variable
-    private boolean isRecord = false;
     private boolean isVoiceInput = false;
     private boolean isInputBywordsList = false;
     private boolean isClear = false;
@@ -246,6 +248,15 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         intentFilter.addAction(RECORD_FINISHED_ACTION);
         intentFilter.addAction(RECOGNITION_FINISHED_ACTION);
         mContext.registerReceiver(eventReceiver, intentFilter);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (recorder != null) {
+            recorder.stopRecording();
+            recorder = null;
+        }
     }
 
     @Override
@@ -572,11 +583,10 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 // ###STEP 1###
                 SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd-hhmmss", Locale.getDefault());
                 String path = "MyRecorder/tmp/" + df.format(new Date()) + ".wav";
-                WAVRecorder recorder = new WAVRecorder(mContext, path, 2500, mUIHandler);
-                if (!isRecord) {
+                if (recorder == null) {
+                    recorder = new WAVRecorder(mContext, path, 2500, mUIHandler);
                     circle = new VolumeCircle(mContext, 0, dpi);
                     volView.addView(circle);
-                    isRecord = true;
                     Log.d(TAG, "Start Recording");
                     recorder.startRecording(); // ###STEP 1-1###
                 }
@@ -615,7 +625,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     // ###STEP 2###
     @Override
     public void onFinishRecord(String path) {
-        isRecord = false;
+        recorder = null;
         Log.d(TAG, "Stop Recording");
         // notify UI finish recording
         tvRecNOW.setText("");

@@ -82,7 +82,7 @@ public class VoiceCollectFragment extends Fragment implements
                     break;
 
                 case UPDATE_RECORDING_TEXT:
-                    String recordingMsg = "錄音中";
+                    String recordingMsg = "錄音中(" + circle.getLevel() + "%)";
                     for (int i = 0; i <= recordingDot; i++)
                         recordingMsg += ".";
                     recordingDot = (recordingDot + 1) % 3;
@@ -110,9 +110,9 @@ public class VoiceCollectFragment extends Fragment implements
     String label = "";
     String tone = "";
     int correct = 0, total = 0;
+    WAVRecorder recorder = null;
 
     //State Variable
-    private boolean isRecord = false;
     private int recordingDot = 0; // max 2
 
     private void initUI() {
@@ -181,6 +181,15 @@ public class VoiceCollectFragment extends Fragment implements
     }
 
     @Override
+    public void onPause() {
+        super.onPause();
+        if (recorder != null) {
+            recorder.stopRecording();
+            recorder = null;
+        }
+    }
+
+    @Override
     public void onStop() {
         super.onStop();
         mContext.unregisterReceiver(eventReceiver);
@@ -193,11 +202,10 @@ public class VoiceCollectFragment extends Fragment implements
                 SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd-hhmmss", Locale.getDefault());
                 String path = "MyRecorder/" + label + "/" + tone +
                         "-" + df.format(new Date()) + ".wav";
-                WAVRecorder recorder = new WAVRecorder(mContext, path, 2500, mUIHandler);
-                if (!isRecord && label.length() > 0) {
+                if (recorder == null && label.length() > 0) {
+                    recorder = new WAVRecorder(mContext, path, 2500, mUIHandler);
                     circle = new VolumeCircle(mContext, 0, dpi);
                     volView.addView(circle);
-                    isRecord = true;
                     Log.d(TAG, "Start Recording");
                     recorder.startRecording();
                 }
@@ -272,7 +280,7 @@ public class VoiceCollectFragment extends Fragment implements
 
     @Override
     public void onFinishRecord(String path) {
-        isRecord = false;
+        recorder = null;
         Log.d(TAG, "Stop Recording");
         // notify UI finish recording
         tvRecNOW.setText("");
