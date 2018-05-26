@@ -156,7 +156,6 @@ public class WAVRecorder {
                                     max = num;
                             }
                             int level = (int) ((double) max / BASE_VOLUME);
-                            if (level > 0) level += 1;
                             Message msg = new Message();
                             msg.what = UPDATE_VOLUME_CIRCLE; // volume level
                             msg.arg1 = level;

@@ -16,6 +16,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.Spinner;
@@ -92,6 +93,7 @@ public class VoiceCollectFragment extends Fragment implements
     FrameLayout volView;
     Spinner spMyLabel, spTone;
     MyText txtWord;
+    CheckBox chkUpload, chkTone;
     TextView tvRecNOW, tvCorrect, tvTotal, tvPath, tvRes;
     VolumeCircle circle = null;
 
@@ -127,6 +129,8 @@ public class VoiceCollectFragment extends Fragment implements
         tvTotal = mView.findViewById(R.id.tvTotal);
         tvCorrect = mView.findViewById(R.id.tvCorrect);
         tvRes = mView.findViewById(R.id.tvRes);
+        chkUpload = mView.findViewById(R.id.chkUpload);
+        chkTone = mView.findViewById(R.id.chkTone);
 
         txtWord.setOnCursorChangedListener(this);
         spMyLabel.setOnItemSelectedListener(this);
@@ -193,8 +197,12 @@ public class VoiceCollectFragment extends Fragment implements
         switch (view.getId()) {
             case R.id.btnRec:
                 SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault());
-                String path = "MyRecorder/" + label + "/" + tone +
-                        "-" + df.format(new Date()) + ".wav";
+                String path = "MyRecorder/";
+                if (chkTone.isChecked())
+                    path += "withTone/" + label + "˙ ˊˇˋ".charAt(Integer.parseInt(tone)) + "/";
+                else
+                    path += label + "/" + tone + "-";
+                path = path.replaceAll("\\s", "") + df.format(new Date()) + ".wav";
                 if (recorder == null && label.length() > 0) {
                     recorder = new WAVRecorder(mContext, path, 2500, mUIHandler);
                     circle = new VolumeCircle(mContext, 0, dpi);
@@ -246,6 +254,12 @@ public class VoiceCollectFragment extends Fragment implements
                 ad.setDropDownViewResource(R.layout.myspinner);
                 spMyLabel.setAdapter(ad);
                 spMyLabel.setSelection(selection, true);
+                recordedPath.clear();
+                tvPath.setText("");
+                total = 0;
+                correct = 0;
+                tvCorrect.setText("");
+                tvTotal.setText("已錄 : " + total);
                 break;
         }
     }
@@ -286,7 +300,8 @@ public class VoiceCollectFragment extends Fragment implements
             tvTotal.setText("已錄 : " + total);
             recordedPath.addFirst(path);
             tvPath.setText(path);
-            new Recognition(mContext, path, mUIHandler).start();
+            if (chkUpload.isChecked())
+                new Recognition(mContext, path, mUIHandler).start();
         } else {
             file.delete();
             MediaScannerConnection.scanFile(mContext, new String[]{path}, null, null);
