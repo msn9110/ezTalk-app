@@ -109,6 +109,7 @@ public class VoiceCollectFragment extends Fragment implements
     WAVRecorder recorder = null;
 
     //State Variable
+    boolean isSentence = false;
 
     private void initUI() {
         // get resolution
@@ -198,17 +199,31 @@ public class VoiceCollectFragment extends Fragment implements
             case R.id.btnRec:
                 SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault());
                 String path = "MyRecorder/";
-                if (chkTone.isChecked())
-                    path += "withTone/" + label + "˙ ˊˇˋ".charAt(Integer.parseInt(tone)) + "/";
-                else
-                    path += label + "/" + tone + "-";
+                int duration = -1;
+                boolean toRec = false;
+                if (!isSentence) {
+                    duration = 2500;
+                    toRec = label.length() > 0;
+                    if (chkTone.isChecked())
+                        path += "withTone/" + label + "˙ ˊˇˋ".charAt(Integer.parseInt(tone)) + "/";
+                    else
+                        path += label + "/" + tone + "-";
+                } else {
+                    String dir =txtWord.getText().toString()
+                            .replaceAll("[^\u4e00-\u9fa6]+", "-");
+                    toRec = dir.replaceAll("-", "").length() > 0;
+                    path += "sentence/" + dir + "/";
+                }
+
                 path = path.replaceAll("\\s", "") + df.format(new Date()) + ".wav";
-                if (recorder == null && label.length() > 0) {
-                    recorder = new WAVRecorder(mContext, path, 2500, mUIHandler);
+                if (recorder == null && toRec) {
+                    recorder = new WAVRecorder(mContext, path, duration, mUIHandler);
                     circle = new VolumeCircle(mContext, 0, dpi);
                     volView.addView(circle);
                     Log.d(TAG, "Start Recording");
                     recorder.startRecording();
+                } else if (recorder != null && recorder.isRecordNow()) {
+                    recorder.stopRecording();
                 }
                 break;
 
@@ -235,8 +250,9 @@ public class VoiceCollectFragment extends Fragment implements
                 ArrayList<String> noToneLabels = new ArrayList<>();
                 noToneLabels.add("-");
                 int selection = 0;
-                if (msg.length() > 0) {
-                    String ch = msg.substring(0, 1);
+                if (msg.length() == 1) {
+                    isSentence = false;
+                    String ch = msg;
                     try {
                         ArrayList<String> pronounces = lookTable(czTable, ch, "pronounces");
                         selection = 1;
@@ -249,6 +265,8 @@ public class VoiceCollectFragment extends Fragment implements
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
+                } else if (msg.length() > 1) {
+                    isSentence = true;
                 }
                 ArrayAdapter<String> ad = new ArrayAdapter<>(mContext, R.layout.myspinner, noToneLabels);
                 ad.setDropDownViewResource(R.layout.myspinner);

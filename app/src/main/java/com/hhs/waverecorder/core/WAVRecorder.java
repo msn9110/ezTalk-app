@@ -54,13 +54,10 @@ public class WAVRecorder {
                     Thread.sleep(500);
                     //mUIHandler.sendEmptyMessage(UPDATE_RECORDING_TEXT);
                 }
+                stopByTimer = true;
+                stopRecording();
             } catch (InterruptedException e) {
                 Log.d("TIMER", "STOP");
-            } finally {
-                if (isRecording) {
-                    stopByTimer = true;
-                    stopRecording();
-                }
             }
         }
     });
