@@ -52,16 +52,12 @@ import java.util.Date;
 import java.util.Locale;
 
 import static com.hhs.waverecorder.AppValue.*;
-import static com.hhs.waverecorder.utils.Utils.getTone;
-import static com.hhs.waverecorder.utils.Utils.lookTable;
-import static com.hhs.waverecorder.utils.Utils.readTables;
-import static com.hhs.waverecorder.utils.Utils.sortJSONArrayByCount;
-import static com.hhs.waverecorder.utils.Utils.storeTable;
-import static com.hhs.waverecorder.utils.Utils.updateOAO;
+import static com.hhs.waverecorder.utils.Utils.*;
 
 @SuppressWarnings("all")
 public class RecognitionFragment extends Fragment implements AdapterView.OnItemSelectedListener,
-        AdapterView.OnItemClickListener, AdapterView.OnItemLongClickListener, View.OnClickListener,
+        AdapterView.OnItemClickListener, AdapterView.OnItemLongClickListener,
+        View.OnClickListener, View.OnLongClickListener,
         OnCursorChangedListener, VoiceInputListener {
 
     // The method creating fragment pass some parameters
@@ -167,6 +163,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         btnClear.setOnClickListener(this);
         btnBack.setOnClickListener(this);
         btnMoveCursor.setOnClickListener(this);
+        btnMoveCursor.setOnLongClickListener(this);
 
         // For EditText or TextView
         txtMsg.setOnCursorChangedListener(this);
@@ -335,8 +332,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     // software to trigger ListView onItemClick event
     private void clickItem(ListView listView, int pos) {
         listView.performItemClick(listView.getAdapter().getView(pos, null, null), pos, pos);
-        if (listView == lvResults)
-            ad3.setSelectPosition(pos);
     }
 
     // For Clear
@@ -600,6 +595,17 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
             txtMsg.setSelection(part1.length() + word.length()); // trigger onCursorChangedevent
         else
             txtMsg.setSelection(msgPos);
+    }
+
+    @Override
+    public boolean onLongClick(View view) {
+        switch (view.getId()) {
+            case R.id.btnMoveCursor:
+                if (txtMsg.length() > 0)
+                    txtMsg.setSelection(1);
+                break;
+        }
+        return true;
     }
 
     @Override
