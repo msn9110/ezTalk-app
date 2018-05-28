@@ -63,11 +63,15 @@ public final class Utils {
         return new JSONObject(jsonStr);
     }
 
-    // find pronounce of chinese word
-    public static ArrayList<String> lookTable(JSONObject table, String word, String key) throws JSONException {
-        JSONObject item = table.getJSONObject(word);
+    // look zcTable or czTable
+    public static ArrayList<String> lookTable(JSONObject table, String value, String key) throws JSONException {
         ArrayList<String> candidate = new ArrayList<>();
-        JSONArray jsonArray = sortJSONArrayByCount(item.getJSONArray(key), false);
+        JSONArray jsonArray;
+        if (key.length() > 0) {
+            JSONObject item = table.getJSONObject(value);
+            jsonArray = sortJSONArrayByCount(item.getJSONArray(key), false);
+        } else
+            jsonArray = sortJSONArrayByCount(table.getJSONArray(value), false);
         for (int i = 0; i < jsonArray.length(); i++) {
             candidate.add(jsonArray.getJSONObject(i).keys().next());
         }

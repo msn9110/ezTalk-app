@@ -26,6 +26,7 @@ public class RadioItemViewAdapter extends BaseAdapter {
 
     public void setSelectPosition(int position) {
         this.selectPosition = position;
+        this.notifyDataSetChanged(); // trigger getView
     }
     public int getSelectPosition() {
         return selectPosition;

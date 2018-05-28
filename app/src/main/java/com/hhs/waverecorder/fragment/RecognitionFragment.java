@@ -115,6 +115,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     ArrayList<String> myLabelList = new ArrayList<>(); // store the choice for displayLabelList
     ArrayList<String> noToneLabelList = new ArrayList<>(); // store choice for recognitionList
     ArrayList<String> waveFiles = new ArrayList<>(); // store path of recording wave file if input is not by recording will store ""
+    ArrayList<ArrayList<String>> results = new ArrayList<>();
+    ArrayList<Integer> resultsPos = new ArrayList<>();
     ArrayAdapter<String> ad2, ad4;
     RadioItemViewAdapter ad3;
 
@@ -129,7 +131,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     private boolean isVoiceInput = false;
     private boolean isInputBywordsList = false;
     private boolean isClear = false;
-    private boolean longClick = false;
+    private boolean longClick = false; // to insert new word
 
     private void initUI() {
 
@@ -344,6 +346,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         recognitionList.clear();
         myLabelList.clear();
         noToneLabelList.clear();
+        results.clear();
+        resultsPos.clear();
         recognitionList.add("-");
         displayLabelList.add("-");
         ad3.notifyDataSetChanged();
@@ -371,20 +375,32 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 String addedText = s.toString().substring(start, endPos);
                 for (int i = start; i < endPos; i++) {
                     String ch = addedText.substring(i - start, i - start + 1);
+                    ArrayList<String> tmp = new ArrayList<String>();
+                    tmp.add("-");
                     waveFiles.add(i, "");
                     // avoid no mapping in czTable
                     noToneLabelList.add(i, "unknown");
                     myLabelList.add(i, "unknown");
+                    int selection = 0;
                     try {
                         ArrayList<String> candidate = lookTable(czTable, ch, "pronounces");
                         if (candidate.size() > 0) {
                             String myLabel = candidate.get(0);
-                            noToneLabelList.set(i, myLabel.replaceAll("[˙ˊˇˋ]$", ""));
+                            String noToneLabel = myLabel.replaceAll("[˙ˊˇˋ]$", "");
+                            noToneLabelList.set(i, noToneLabel);
                             myLabelList.set(i, myLabel);
+                            for (String label:candidate) {
+                                noToneLabel = label.replaceAll("[˙ˊˇˋ]$", "");
+                                if (!tmp.contains(noToneLabel))
+                                    tmp.add(noToneLabel);
+                            }
+                            selection = 1;
                         }
                     } catch (JSONException e) {
                         Log.w(TAG, "no Mapping In czTable");
                     }
+                    results.add(i, tmp);
+                    resultsPos.add(selection);
                 }
             } else if (!insertMode) { // delete
                 if (!isClear) {
@@ -392,6 +408,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                         waveFiles.remove(i);
                         myLabelList.remove(i);
                         noToneLabelList.remove(i);
+                        results.remove(i);
+                        resultsPos.remove(i);
                     }
                 } else {
                     clear();
@@ -418,6 +436,20 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 int selectedIndex = 0;
                 Log.d(TAG, "onCursorChanged : " + position);
                 if (position > 0) {
+                    if (!isInputBywordsList) {
+                        recognitionList.clear();
+                        recognitionList.addAll(results.get(position - 1));
+                        int selected = resultsPos.get(position - 1);
+                        ad3.setSelectPosition(selected);
+                        String noToneLabel = recognitionList.get(selected);
+                        wordsList.clear();
+                        try {
+                            wordsList.addAll(lookTable(zcTable, noToneLabel, ""));
+                        } catch (JSONException e) {
+                            Log.w(TAG, "onCursorChanged1");
+                        }
+                        ad2.notifyDataSetChanged();
+                    }
                     Log.d(TAG, character);
                     try {
                         ArrayList<String> candidate = lookTable(czTable, character, "pronounces");
@@ -433,7 +465,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                         if (candidate.size() > 0 && selectedIndex == 0)
                             selectedIndex = 1;
                     } catch (JSONException e) {
-                        Log.w(TAG, "onCursorChanged");
+                        Log.w(TAG, "onCursorChanged2");
                     }
                 }
 
@@ -524,12 +556,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
             return;
         }
         try {
-
-            JSONArray jsonArray = sortJSONArrayByCount(zcTable.getJSONArray(select), false);
-            for (int i = 0; i < jsonArray.length(); i++) {
-                String key = jsonArray.getJSONObject(i).keys().next();
-                wordsList.add(key);
-            }
+            wordsList.addAll(lookTable(zcTable, select, ""));
             ad2.notifyDataSetChanged();
             if (wordsList.size() > 0) {
                 this.longClick = longClick;
@@ -541,18 +568,24 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         }
     }
     private void lvWordsItemClick(String word, boolean insertMode) {
+        isInputBywordsList = insertMode;
         int msgPos = txtMsg.getSelectionEnd();
         String noToneLabel = recognitionList.get(ad3.getSelectPosition());
         if (insertMode) {
+            ArrayList<String> tmp = new ArrayList<String>();
+            tmp.addAll(recognitionList);
+            results.add(msgPos, tmp);
+            resultsPos.add(msgPos, ad3.getSelectPosition());
             noToneLabelList.add(msgPos, noToneLabel);
         } else {
             Log.d(TAG, "## lvWordsClick : " + msgPos);
+            resultsPos.set(msgPos - 1, ad3.getSelectPosition());
             noToneLabelList.set(msgPos - 1, noToneLabel);
+            myLabelList.set(msgPos -1, noToneLabel);
         }
         if (!isVoiceInput && insertMode) {
             // insert by wordlist and not voice input
             waveFiles.add(msgPos, "");
-            isInputBywordsList = true;
         }
 
         String msg = txtMsg.getText().toString();
