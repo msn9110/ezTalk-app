@@ -52,6 +52,7 @@ import java.util.Date;
 import java.util.Locale;
 
 import static com.hhs.waverecorder.AppValue.*;
+import static com.hhs.waverecorder.MainActivity.showSoftKeyboard;
 import static com.hhs.waverecorder.utils.Utils.*;
 
 @SuppressWarnings("all")
@@ -128,6 +129,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     private boolean isInputBywordsList = false;
     private boolean isClear = false;
     private boolean longClick = false; // to insert new word
+    private boolean modifiedByKeyboard = false;
 
     private void initUI() {
 
@@ -144,7 +146,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         // loading page
         loadingPage = new ProgressDialog(mContext);
         loadingPage.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        loadingPage.setTitle("載入資料中");
+        loadingPage.setTitle("辨識中");
         loadingPage.setMessage("請稍候");
 
         lvResults = mView.findViewById(R.id.lvResults);
@@ -430,6 +432,9 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 displayLabelList.add("-");
                 int selectedIndex = 0;
                 Log.d(TAG, "onCursorChanged : " + position);
+                if (modifiedByKeyboard) {
+
+                }
                 if (position > 0) {
                     if (!isInputBywordsList) {
                         recognitionList.clear();
@@ -547,6 +552,12 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         wordsList.clear();
         ad3.setSelectPosition(position);
         if (position == 0) {
+            if (txtMsg.getSelectionEnd() > 0 && !longClick) {
+                int cursor = txtMsg.getSelectionEnd();
+                modifiedByKeyboard = true;
+                txtMsg.setSelection(cursor - 1, cursor);
+                showSoftKeyboard(txtMsg, mContext);
+            }
             ad2.notifyDataSetChanged();
             return;
         }
@@ -625,8 +636,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 break;
 
             case R.id.btnTalk:
-                //talk();
-                debug();
+                talk();
+                //debug();
                 break;
 
             case R.id.btnClear:
@@ -666,6 +677,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         // non UI
         isVoiceInput = true;
         waveFiles.add(txtMsg.getSelectionEnd(), path);
+        loadingPage.show();
         new Recognition(mContext, path, mUIHandler).start(); // ###STEP 2-1###
     }
 
@@ -696,6 +708,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
             }
         } catch (JSONException e) {
             e.printStackTrace();
+        } finally {
+            loadingPage.dismiss();
         }
     }
 

@@ -24,6 +24,7 @@ import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 
 import com.example.hhs.wavrecorder.R;
 import com.hhs.waverecorder.fragment.RecognitionFragment;
@@ -189,5 +190,10 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
-
+    public static void showSoftKeyboard(View view, Context mContext) {
+        if (view.requestFocus()) {
+            InputMethodManager imm = (InputMethodManager)mContext.getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
+        }
+    }
 }
