@@ -298,7 +298,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 File file = new File(sourcePath);
                 String myLabel = myLabelList.get(i);
                 String noToneLabel = myLabel.replaceAll("[˙ˊˇˋ]", "");
-                String tone = String.valueOf(getTone(myLabel)) + '-';
+                String tone = String.valueOf(getTone(myLabel));
                 String newPath = Environment.getExternalStoragePublicDirectory("MyRecorder")
                         + "/" + noToneLabel + "/" + tone + file.getName();
                 if (MyFile.moveFile(sourcePath, newPath)) {
@@ -486,9 +486,10 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                  Log.d(TAG, "spinner : " + position);
                  if (position > 0) {
                      int msgPos = txtMsg.getSelectionEnd();
-                     boolean insertMode = msgPos == 0 || isVoiceInput || isInputBywordsList;
+                     boolean insertMode = msgPos == 0 || isInputBywordsList;
                      // ###STEP 8-1###
                      if (insertMode) {
+                         Log.d(TAG, "spinner insert my label");
                          if (msgPos >= myLabelList.size())
                              myLabelList.add(select);
                          else
@@ -627,17 +628,19 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault());
                 String path = "MyRecorder/tmp/" + df.format(new Date()) + ".wav";
                 if (recorder == null) {
-                    recorder = new WAVRecorder(mContext, path, 2500, mUIHandler);
+                    recorder = new WAVRecorder(mContext, path, -1, mUIHandler);
                     circle = new VolumeCircle(mContext, 0, dpi);
                     volView.addView(circle);
                     Log.d(TAG, "Start Recording");
                     recorder.startRecording(); // ###STEP 1-1###
+                } else if (recorder != null && recorder.isRecordNow()) {
+                    recorder.stopRecording();
                 }
                 break;
 
             case R.id.btnTalk:
-                talk();
-                //debug();
+                //talk();
+                debug();
                 break;
 
             case R.id.btnClear:
@@ -676,36 +679,65 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         circle = null;
         // non UI
         isVoiceInput = true;
-        waveFiles.add(txtMsg.getSelectionEnd(), path);
+
         loadingPage.show();
         new Recognition(mContext, path, mUIHandler).start(); // ###STEP 2-1###
     }
 
     // ###STEP 3###
     @Override
-    public void onFinishRecognition(String result, String filepath/*not used here*/) {
+    public void onFinishRecognition(String result, String filepath) {
         try {
+            File file = new File(filepath);
             JSONObject jsonObject = new JSONObject(result);
             JSONObject response = jsonObject.getJSONObject("response");
-            boolean success = response.getBoolean("success");
-            recognitionList.clear();
-            recognitionList.add("-");
+            int numOfWord = response.getInt("success");
+            int cursor = txtMsg.getSelectionEnd();
 
-            if (success) {
-                JSONArray results = response.getJSONArray("result");
-                for (int i = 0; i < results.length(); i++) {
-                    String pronounce = results.getString(i);
-                    if (!pronounce.startsWith("_")) {
-                        recognitionList.add(pronounce);
+            if (numOfWord > 0) {
+                JSONArray lists = response.getJSONArray("result_lists");
+                String sentence = response.getString("sentence");
+                for (int i = 0; i < numOfWord; i++) {
+                    recognitionList.clear();
+                    recognitionList.add("-");
+                    waveFiles.add(txtMsg.getSelectionEnd(), "clip-stream" + String.valueOf(i + 1)
+                    + "-" + file.getName());
+                    JSONArray results = lists.getJSONArray(i);
+                    for (int j = 0; j < results.length(); j++) {
+                        String pronounce = results.getString(j);
+                        if (!pronounce.startsWith("_")) {
+                            recognitionList.add(pronounce);
+                        }
                     }
+                    ad3.notifyDataSetChanged();
+                    if (recognitionList.size() > 1) {
+                        clickItem(lvResults, 1); // ###STEP 3-1###
+                    } else {
+                        clickItem(lvResults, 0); // ###STEP 3-1###
+                    }
+                    // post processing replace word according to sentence
+                    String msg = txtMsg.getText().toString();
+                    String text1 = msg.substring(0, cursor + i);
+                    String text2 = msg.substring(cursor + i + 1);
+                    String replacement = sentence.substring(i, i + 1);
+                    msg = text1 + replacement + text2;
+                    String noToneLabel = noToneLabelList.get(cursor + i);
+                    ArrayList<String> candidate = lookTable(czTable, replacement, "pronounces");
+                    for (int j = 0; i < candidate.size(); j++) {
+                        String label = candidate.get(j);
+                        if (label.startsWith(noToneLabel)) {
+                            myLabelList.add(cursor + i, label);
+                            break;
+                        }
+                    }
+                    txtMsg.setText(msg);
+                    txtMsg.setSelection(cursor + i + 1);
                 }
+
+                isVoiceInput = false;
+                txtMsg.setSelection(cursor + 1);
             }
-            ad3.notifyDataSetChanged();
-            if (recognitionList.size() > 1) {
-                clickItem(lvResults, 1); // ###STEP 3-1###
-            } else {
-                clickItem(lvResults, 0); // ###STEP 3-1###
-            }
+
         } catch (JSONException e) {
             e.printStackTrace();
         } finally {
@@ -715,7 +747,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
     // ###STEP 9###
     private void onFinishAllStep() {
-        isVoiceInput = false;
         isInputBywordsList = false;
     }
 

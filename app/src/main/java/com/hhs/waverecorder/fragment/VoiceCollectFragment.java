@@ -332,14 +332,23 @@ public class VoiceCollectFragment extends Fragment implements
         String correctLabel = file.getParentFile().getName();
         try {
             JSONObject response = new JSONObject(result).getJSONObject("response");
-            if (response.getBoolean("success")) {
+            int numOfWord = response.getInt("success");
+            if (numOfWord > 0) {
                 String myResult = "";
-                JSONArray jsonArray = response.getJSONArray("result");
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    myResult += jsonArray.getString(i) + ",";
-                    if (correctLabel.contentEquals(jsonArray.getString(i)))
+                JSONArray lists = response.getJSONArray("result_lists");
+                if (numOfWord == 1) {
+                    JSONArray jsonArray = lists.getJSONArray(0);
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        myResult += jsonArray.getString(i) + ",";
+                        if (correctLabel.contentEquals(jsonArray.getString(i)))
+                            correct++;
+                    }
+                } else {
+                    myResult = response.getString("sentence");
+                    if (correctLabel.contentEquals(myResult))
                         correct++;
                 }
+
                 myResult = myResult.replaceAll(",$", "");
                 tvRes.setText(myResult);
                 tvCorrect.setText("Accuracy : " + correct + " / " + total);
