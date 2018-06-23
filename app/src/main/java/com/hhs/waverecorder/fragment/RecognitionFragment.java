@@ -467,11 +467,10 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                             selectedIndex = 1;
                     } catch (JSONException e) {
                         Log.w(TAG, "onCursorChanged2");
-                    } finally {
-                        ad4.notifyDataSetChanged();
-                        spMyLabel.setSelection(selectedIndex, true);
                     }
                 }
+                ad4.notifyDataSetChanged();
+                spMyLabel.setSelection(selectedIndex, true);
                 break;
         }
     }
@@ -487,7 +486,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                  Log.d(TAG, "spinner : " + position);
                  if (position > 0 && !isVoiceInput) {
                      int msgPos = txtMsg.getSelectionEnd();
-                     boolean insertMode = msgPos == 0 || longClick;
+                     boolean insertMode = isInputByWordsList;
                      // ###STEP 8-1###
                      if (insertMode) {
                          Log.d(TAG, "spinner insert my label");
