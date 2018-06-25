@@ -123,6 +123,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
     //Global Variable
     WAVRecorder recorder = null;
+    ArrayList<String> rawFiles = new ArrayList<>();
+    ArrayList<String> originalSentences = new ArrayList<>();
 
     //State Variable
     private boolean isVoiceInput = false;
@@ -289,9 +291,43 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     }
 
 
-    private void talk() {
+    private void talk() throws JSONException {
         JSONObject packet = new JSONObject();
-        ArrayList<File> movedFiles = new ArrayList<>();
+        boolean update = false;
+        JSONArray filesNeedToMove = new JSONArray();
+        String msg = txtMsg.getText().toString();
+        for (int i = 0; i < rawFiles.size(); i++) {
+            String modified = "";
+            String mappedFilename = rawFiles.get(i);
+            for (int j = 0; j < waveFiles.size(); j++) {
+                if (waveFiles.get(j).endsWith(mappedFilename)) {
+                    modified += msg.charAt(j);
+                }
+            }
+            if (modified.length() > 0) {
+                update = true;
+                String original = this.originalSentences.get(i);
+                JSONObject itemContent = new JSONObject();
+                itemContent.put("original", original);
+                itemContent.put("modified", modified);
+                JSONObject item = new JSONObject();
+                item.put(mappedFilename, itemContent);
+                filesNeedToMove.put(item);
+                String originalPath = Environment.getExternalStoragePublicDirectory("MyRecorder")
+                                      + "/tmp/" + mappedFilename;
+                String newPath = Environment.getExternalStoragePublicDirectory("MyRecorder")
+                                 + "/sentence/" + modified + "/" + mappedFilename;
+                if (MyFile.moveFile(originalPath, newPath)) {
+                    MediaScannerConnection.scanFile(mContext, new String[]{originalPath, newPath},
+                                                    null, null);
+                }
+            }
+        }
+        rawFiles.clear();
+        originalSentences.clear();
+        packet.put("streamFilesMove", filesNeedToMove);
+
+        JSONArray syllableFilesMove = new JSONArray();
         for (int i = 0; i < waveFiles.size(); i++) {
             String sourcePath = waveFiles.get(i);
             if (sourcePath.length() > 0) {
@@ -299,28 +335,19 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 String myLabel = myLabelList.get(i);
                 String noToneLabel = myLabel.replaceAll("[˙ˊˇˋ]", "");
                 String tone = String.valueOf(getTone(myLabel));
-                String newPath = Environment.getExternalStoragePublicDirectory("MyRecorder")
-                        + "/" + noToneLabel + "/" + tone + file.getName();
-                if (MyFile.moveFile(sourcePath, newPath)) {
-                    movedFiles.add(new File(sourcePath));
-                }
-                MediaScannerConnection.scanFile(mContext, new String[] {sourcePath, newPath}, null, null);
                 waveFiles.set(i, "");
+                JSONObject itemContent = new JSONObject();
+                itemContent.put("label", noToneLabel);
+                itemContent.put("tone", tone);
                 JSONObject item = new JSONObject();
-                try {
-                    item.put("label", noToneLabel);
-                    item.put("filename", file.getName());
-                    item.put("tone", tone);
-                    packet.put(String.valueOf(i), item);
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+                item.put(file.getName(), itemContent);
+                syllableFilesMove.put(item);
             }
         }
+        packet.put("syllableFilesMove", syllableFilesMove);
         //// TODO: 2018/4/21 add control for local recognition
-        if (movedFiles.size() > 0) {
-            new Updater(mContext, packet, movedFiles).start();
+        if (update) {
+            new Updater(mContext, packet).start();
         }
 
         try {
@@ -345,6 +372,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         noToneLabelList.clear();
         results.clear();
         resultsPos.clear();
+        rawFiles.clear();
+        originalSentences.clear();
         recognitionList.add("-");
         displayLabelList.add("-");
         ad3.notifyDataSetChanged();
@@ -693,9 +722,13 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
             if (numOfWord > 0) {
                 JSONArray lists = response.getJSONArray("result_lists");
+                JSONArray usedIndexes = response.getJSONArray("usedIndexes");
                 String sentence = response.getString("sentence");
+                originalSentences.add(sentence);
+                rawFiles.add(file.getName());
                 Log.i(TAG, sentence);
                 for (int i = 0; i < numOfWord; i++) {
+                    int index = usedIndexes.getInt(i);
                     recognitionList.clear();
                     recognitionList.add("-");
                     waveFiles.add(txtMsg.getSelectionEnd(), "clip-stream" + String.valueOf(i + 1)
@@ -709,7 +742,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                     }
                     ad3.notifyDataSetChanged();
                     if (recognitionList.size() > 1) {
-                        clickItem(lvResults, 1); // ###STEP 3-1###
+                        clickItem(lvResults, index); // ###STEP 3-1###
                     } else {
                         clickItem(lvResults, 0); // ###STEP 3-1###
                     }
@@ -732,13 +765,14 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                             break;
                         }
                     }
+                    isInputByWordsList = false;
                     txtMsg.setText(msg);
                     txtMsg.setSelection(cursor + i + 1);
                     Log.i(TAG, "replace word:" + String.valueOf(msgPos + 1));
                 }
-
+                txtMsg.setSelection(cursor + 1);
                 isVoiceInput = false;
-                //txtMsg.setSelection(cursor + 1);
+
                 debug();
                 Log.i(TAG, "Finish Recognition");
             }

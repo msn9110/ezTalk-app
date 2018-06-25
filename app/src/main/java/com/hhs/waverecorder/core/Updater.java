@@ -23,12 +23,12 @@ import java.util.ArrayList;
 public class Updater extends Thread {
     private Context mContext;
     private JSONObject mUpdateData;
-    private final ArrayList<File> mFiles;
+    //private final ArrayList<File> mFiles;
 
-    public Updater(Context context, JSONObject data, ArrayList<File> files) {
+    public Updater(Context context, JSONObject data) {
         mContext = context;
         mUpdateData = data;
-        mFiles = files;
+        //mFiles = files;
     }
 
     @Override
@@ -54,6 +54,7 @@ public class Updater extends Thread {
             boolean success = response.getBoolean("success");
             JSONObject movedFilesState = response.getJSONObject("movedFilesState");
             if (success) {
+                /*
                 for (File f:mFiles) {
                     String originPath = f.getAbsolutePath();
                     String newName = "uploaded-" + f.getName();
@@ -63,6 +64,7 @@ public class Updater extends Thread {
                                                         null, null);
                     }
                 }
+                */
             }
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
