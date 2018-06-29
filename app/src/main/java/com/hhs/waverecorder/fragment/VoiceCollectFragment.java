@@ -24,6 +24,7 @@ import android.widget.TextView;
 
 import com.example.hhs.wavrecorder.R;
 import com.hhs.waverecorder.core.Recognition;
+import com.hhs.waverecorder.core.RemoteDelete;
 import com.hhs.waverecorder.core.WAVRecorder;
 import com.hhs.waverecorder.listener.OnCursorChangedListener;
 import com.hhs.waverecorder.listener.VoiceInputListener;
@@ -209,7 +210,7 @@ public class VoiceCollectFragment extends Fragment implements
                     else
                         path += label + "/" + tone + "-";
                 } else {
-                    String dir =txtWord.getText().toString()
+                    String dir = txtWord.getText().toString()
                             .replaceAll("[^\u4e00-\u9fa6]+", "-");
                     toRec = dir.replaceAll("-", "").length() > 0;
                     path += "sentence/" + dir + "/";
@@ -230,6 +231,8 @@ public class VoiceCollectFragment extends Fragment implements
             case R.id.btnDel:
                 if (recordedPath.size() > 0) {
                     String recorded = recordedPath.removeFirst();
+                    RemoteDelete remoteDelete = new RemoteDelete(recorded);
+                    remoteDelete.executeRemoteDelete();
                     File file = new File(recorded);
                     file.delete();
                     MediaScannerConnection.scanFile(mContext, new String[]{recorded}, null, null);

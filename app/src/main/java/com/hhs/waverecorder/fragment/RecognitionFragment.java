@@ -32,6 +32,7 @@ import com.example.hhs.wavrecorder.R;
 import com.hhs.waverecorder.adapter.RadioItemViewAdapter;
 import com.hhs.waverecorder.adapter.ViewHolder;
 import com.hhs.waverecorder.core.Recognition;
+import com.hhs.waverecorder.core.Speaker;
 import com.hhs.waverecorder.core.Updater;
 import com.hhs.waverecorder.core.WAVRecorder;
 import com.hhs.waverecorder.listener.OnCursorChangedListener;
@@ -123,6 +124,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
     //Global Variable
     WAVRecorder recorder = null;
+    Speaker speaker;
     ArrayList<String> rawFiles = new ArrayList<>();
     ArrayList<String> originalSentences = new ArrayList<>();
 
@@ -216,6 +218,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate : " + Thread.currentThread().getId());
         mContext = getActivity();
+        speaker = new Speaker(mContext);
         eventReceiver.setOnListener(this); // callback setting
         try {
             // read two dictionary
@@ -258,6 +261,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     @Override
     public void onStop() {
         super.onStop();
+        speaker.stop();
         mContext.unregisterReceiver(eventReceiver);
         try {
             JSONObject tables = new JSONObject()
@@ -267,6 +271,12 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         } catch (JSONException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        speaker.shutdown();
     }
 
     // update word frequency
@@ -291,7 +301,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     }
 
 
-    private void talk() throws JSONException {
+    private void feedback() throws JSONException {
         JSONObject packet = new JSONObject();
         boolean update = false;
         JSONArray filesNeedToMove = new JSONArray();
@@ -357,6 +367,20 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         }
     }
 
+    private void talk() {
+        debug();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    feedback();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+        speaker.addSpeak(txtMsg.getText().toString());
+    }
 
     // software to trigger ListView onItemClick event
     private void clickItem(ListView listView, int pos) {
@@ -665,8 +689,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 break;
 
             case R.id.btnTalk:
-                //talk();
-                debug();
+                talk();
+                //debug();
                 break;
 
             case R.id.btnClear:
