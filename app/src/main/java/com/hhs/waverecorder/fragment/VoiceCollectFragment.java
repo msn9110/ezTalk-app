@@ -362,6 +362,14 @@ public class VoiceCollectFragment extends Fragment implements
                 MediaScannerConnection.scanFile(mContext, new String[]{filepath, newPath}, null, null);
                 if (tvPath.getText().toString().contentEquals(filepath))
                     tvPath.setText(newPath);
+            } else {
+                file.delete();
+                MediaScannerConnection.scanFile(mContext, new String[]{filepath}, null, null);
+                recordedPath.removeFirst();
+                String recorded = recordedPath.peekFirst();
+                tvPath.setText(recorded);
+                total--;
+                tvTotal.setText("已錄 : " + total);
             }
         } catch (JSONException e) {
             e.printStackTrace();

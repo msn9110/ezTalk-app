@@ -52,6 +52,7 @@ public class RemoteDelete {
                 }
 
             });
+            worker.start();
         }
         
     }

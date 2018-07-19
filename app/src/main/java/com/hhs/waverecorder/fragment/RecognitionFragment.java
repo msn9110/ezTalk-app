@@ -176,6 +176,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         txtMsg.addTextChangedListener(textWatcher);
 
         // For ListView or Spinner
+        recognitionList.clear();
         recognitionList.add("-");
         recognitionList.add("ㄧ");
         recognitionList.add("ㄨㄛ");
@@ -281,7 +282,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
     // update word frequency
     private void updateFrequency() throws JSONException {
-        String msg = txtMsg.getText().toString();
+        String msg = txtMsg.getText().toString().replaceAll("[^\u4e00-\u9fa5]", "");
         for (int i = 0; i < myLabelList.size(); i++) {
             // start to update czTable
             String word = msg.substring(i, i + 1);
@@ -306,6 +307,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         boolean update = false;
         JSONArray filesNeedToMove = new JSONArray();
         String msg = txtMsg.getText().toString();
+        packet.put("sentence", msg);
         for (int i = 0; i < rawFiles.size(); i++) {
             String modified = "";
             String mappedFilename = rawFiles.get(i);
@@ -326,7 +328,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 String originalPath = Environment.getExternalStoragePublicDirectory("MyRecorder")
                                       + "/tmp/" + mappedFilename;
                 String newPath = Environment.getExternalStoragePublicDirectory("MyRecorder")
-                                 + "/sentence/" + modified + "/" + mappedFilename;
+                                 + "/sentence/" + modified + "/uploaded-" + mappedFilename;
                 if (MyFile.moveFile(originalPath, newPath)) {
                     MediaScannerConnection.scanFile(mContext, new String[]{originalPath, newPath},
                                                     null, null);
@@ -369,7 +371,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
     private void talk() {
         debug();
-        new Thread(new Runnable() {
+        Thread feedbacker = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -378,7 +380,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                     e.printStackTrace();
                 }
             }
-        }).start();
+        });
+        feedbacker.start();
         speaker.addSpeak(txtMsg.getText().toString());
     }
 
@@ -407,19 +410,112 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         isClear = false;
     }
 
+    private void loadRecord(int position) {
+        recognitionList.clear();
+        recognitionList.addAll(results.get(position - 1));
+        int selected = resultsPos.get(position - 1);
+        ad3.setSelectPosition(selected);
+        String noToneLabel = recognitionList.get(selected);
+        wordsList.clear();
+        try {
+            wordsList.addAll(lookTable(zcTable, noToneLabel, ""));
+        } catch (JSONException e) {
+            Log.w(TAG, "onCursorChanged1");
+        }
+        ad2.notifyDataSetChanged();
+    }
+
+    private void onFinishModifiedByKeyboard(int position, String character) {
+        try {
+            int recognitionListChosen = 0;
+            ArrayList<String> candidate = lookTable(czTable, character, "pronounces");
+            for (String label:candidate) {
+                String noToneLabel = label.replaceAll("[˙ˊˇˋ]", "");
+                if (recognitionList.contains(noToneLabel) && recognitionListChosen == 0) {
+                    recognitionListChosen = recognitionList.indexOf(noToneLabel);
+                    noToneLabelList.set(position - 1, noToneLabel);
+                    myLabelList.set(position - 1, label);
+                }
+                if (!recognitionList.contains(noToneLabel)) {
+                    recognitionList.add(noToneLabel);
+                    if (recognitionListChosen == 0) {
+                        recognitionListChosen = recognitionList.size() - 1;
+                        noToneLabelList.set(position - 1, noToneLabel);
+                        myLabelList.set(position - 1, label);
+                    }
+
+                }
+            }
+            ad3.notifyDataSetChanged();
+            ad3.setSelectPosition(recognitionListChosen);
+            resultsPos.set(position - 1, recognitionListChosen);
+            ArrayList<String> clone = new ArrayList<>(recognitionList);
+            results.set(position - 1, clone);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void displayMyLabel() {
+        int position = txtMsg.getSelectionEnd();
+        String msg = txtMsg.getText().toString();
+        String character = (position - 1 < 0) ? "" : msg.substring(position - 1, position);
+        displayLabelList.clear();
+        displayLabelList.add("-");
+        int selectedIndex = 0;
+
+        if (position > 0) {
+            Log.d(TAG, "cursorPosition : " + position);
+            if (!isInputByWordsList && !modifiedByKeyboard) {
+                loadRecord(position);
+            }
+
+            Log.d(TAG, character);
+            try {
+                ArrayList<String> candidate = lookTable(czTable, character, "pronounces");
+                String myLabel = (position > myLabelList.size()) ? noToneLabelList.get(position - 1)
+                        : myLabelList.get(position - 1);
+                for (int i = 0; i < candidate.size(); i++) {
+                    String label = candidate.get(i);
+                    displayLabelList.add(label);
+                    if (label.startsWith(myLabel) && selectedIndex == 0) {
+                        selectedIndex = i + 1;
+                    }
+                }
+                if (candidate.size() > 0 && selectedIndex == 0)
+                    selectedIndex = 1;
+            } catch (JSONException e) {
+                Log.w(TAG, "onCursorChanged2");
+            }
+        }
+        ad4.notifyDataSetChanged();
+        spMyLabel.setSelection(selectedIndex, true);
+    }
+
     //====================UI Listener Start====================
     // ###STEP 6###
     TextWatcher textWatcher = new TextWatcher() {
         int cursor;
         @Override
         public void beforeTextChanged(CharSequence s, int start, int beforecount, int aftercount) {
+            Log.d(TAG, "Trigger TextWatcher");
             cursor = txtMsg.getSelectionEnd();
         }
 
         @Override
         public void onTextChanged(CharSequence s, int start, int beforecount, int aftercount) {
             boolean insertMode = aftercount > beforecount;
+            Log.d(TAG, "TextWatcher : " + s.toString());
             start = cursor;
+            if (modifiedByKeyboard) {
+                String ch = txtMsg.getText().toString().substring(start - 1, start);
+                Log.d(TAG, "modify to : " + ch);
+                onFinishModifiedByKeyboard(start, ch);
+                Log.d(TAG, "finish modify");
+                modifiedByKeyboard = false;
+                displayMyLabel();
+            }
+
             int endPos = insertMode ? start + aftercount - beforecount : start + beforecount - aftercount;
             if (insertMode && !isInputByWordsList) { // insert mode
                 String addedText = s.toString().substring(start, endPos);
@@ -478,52 +574,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     public void onCursorChanged(View view) {
         switch (view.getId()) {
             case R.id.txtMsg: // ###STEP 7###
-                int position = txtMsg.getSelectionEnd();
-                String msg = txtMsg.getText().toString();
-                String character = (position - 1 < 0) ? "" : msg.substring(position - 1, position);
-                displayLabelList.clear();
-                displayLabelList.add("-");
-                int selectedIndex = 0;
-                Log.d(TAG, "onCursorChanged : " + position);
-                if (modifiedByKeyboard) {
-
-                }
-                if (position > 0) {
-                    if (!isInputByWordsList) {
-                        recognitionList.clear();
-                        recognitionList.addAll(results.get(position - 1));
-                        int selected = resultsPos.get(position - 1);
-                        ad3.setSelectPosition(selected);
-                        String noToneLabel = recognitionList.get(selected);
-                        wordsList.clear();
-                        try {
-                            wordsList.addAll(lookTable(zcTable, noToneLabel, ""));
-                        } catch (JSONException e) {
-                            Log.w(TAG, "onCursorChanged1");
-                        }
-                        ad2.notifyDataSetChanged();
-                    }
-                    boolean insertMode = position == 0 || isInputByWordsList;
-                    Log.d(TAG, character);
-                    try {
-                        ArrayList<String> candidate = lookTable(czTable, character, "pronounces");
-                        String myLabel = (position > myLabelList.size()) ? noToneLabelList.get(position - 1)
-                                                                            : myLabelList.get(position - 1);
-                        for (int i = 0; i < candidate.size(); i++) {
-                            String label = candidate.get(i);
-                            displayLabelList.add(label);
-                            if (label.startsWith(myLabel) && selectedIndex == 0) {
-                                selectedIndex = i + 1;
-                            }
-                        }
-                        if (candidate.size() > 0 && selectedIndex == 0)
-                            selectedIndex = 1;
-                    } catch (JSONException e) {
-                        Log.w(TAG, "onCursorChanged2");
-                    }
-                }
-                ad4.notifyDataSetChanged();
-                spMyLabel.setSelection(selectedIndex, true);
+                displayMyLabel();
                 break;
         }
     }
@@ -612,16 +663,19 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
             ad2.notifyDataSetChanged();
             return;
         }
-        try {
-            wordsList.addAll(lookTable(zcTable, select, ""));
-            ad2.notifyDataSetChanged();
-            if (wordsList.size() > 0) {
-                this.longClick = longClick;
-                clickItem(lvWords, 0);
-                this.longClick = false;
+
+        if (!modifiedByKeyboard) {
+            try {
+                wordsList.addAll(lookTable(zcTable, select, ""));
+                ad2.notifyDataSetChanged();
+                if (wordsList.size() > 0) {
+                    this.longClick = longClick;
+                    clickItem(lvWords, 0);
+                    this.longClick = false;
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
-        } catch (JSONException e) {
-            e.printStackTrace();
         }
     }
     private void lvWordsItemClick(String word, boolean insertMode) {
@@ -799,6 +853,9 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
                 debug();
                 Log.i(TAG, "Finish Recognition");
+            } else {
+                file.delete();
+                MediaScannerConnection.scanFile(mContext, new String[]{filepath}, null, null);
             }
 
         } catch (JSONException e) {
