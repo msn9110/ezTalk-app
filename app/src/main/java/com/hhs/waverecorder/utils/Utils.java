@@ -134,7 +134,7 @@ public final class Utils {
             e.printStackTrace();
         }
         if (zcTable != null) {
-            String outStr = zcTable.toString().replaceAll("(\\},)", "$0\n");
+            String outStr = zcTable.toString().replaceAll("(\\],)", "$0\n");
             MyFile.writeStringToFile(outStr, new File(Environment.getExternalStoragePublicDirectory("tables"), ZCTABLE));
         }
 
