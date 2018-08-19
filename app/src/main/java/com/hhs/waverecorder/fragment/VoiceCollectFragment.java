@@ -206,9 +206,9 @@ public class VoiceCollectFragment extends Fragment implements
                     duration = 2500;
                     toRec = label.length() > 0;
                     if (chkTone.isChecked())
-                        path += "withTone/" + label + "˙ ˊˇˋ".charAt(Integer.parseInt(tone)) + "/";
+                        path += "withTone/" + label + "˙_ˊˇˋ".charAt(Integer.parseInt(tone)) + "/";
                     else
-                        path += label + "/" + tone + "-";
+                        path += "noTone/" + label + "/" + tone + "-";
                 } else {
                     String dir = txtWord.getText().toString()
                             .replaceAll("[^\u4e00-\u9fa6]+", "-");
@@ -336,6 +336,9 @@ public class VoiceCollectFragment extends Fragment implements
         try {
             JSONObject response = new JSONObject(result).getJSONObject("response");
             int numOfWord = response.getInt("success");
+            boolean uploaded = response.getBoolean("uploaded");
+            boolean flag = false;
+
             if (numOfWord > 0) {
                 String myResult = "";
                 JSONArray lists = response.getJSONArray("result_lists");
@@ -355,14 +358,9 @@ public class VoiceCollectFragment extends Fragment implements
                 myResult = myResult.replaceAll(",$", "");
                 tvRes.setText(myResult);
                 tvCorrect.setText("Accuracy : " + correct + " / " + total);
-                recordedPath.removeFirst();
-                String newPath = file.getParent() + "/uploaded-" + file.getName();
-                recordedPath.addFirst(newPath);
-                moveFile(filepath, newPath);
-                MediaScannerConnection.scanFile(mContext, new String[]{filepath, newPath}, null, null);
-                if (tvPath.getText().toString().contentEquals(filepath))
-                    tvPath.setText(newPath);
+
             } else {
+                flag = true;
                 file.delete();
                 MediaScannerConnection.scanFile(mContext, new String[]{filepath}, null, null);
                 recordedPath.removeFirst();
@@ -370,6 +368,16 @@ public class VoiceCollectFragment extends Fragment implements
                 tvPath.setText(recorded);
                 total--;
                 tvTotal.setText("已錄 : " + total);
+            }
+
+            if (!flag && uploaded) {
+                recordedPath.removeFirst();
+                String newPath = file.getParent() + "/uploaded-" + file.getName();
+                recordedPath.addFirst(newPath);
+                moveFile(filepath, newPath);
+                MediaScannerConnection.scanFile(mContext, new String[]{filepath, newPath}, null, null);
+                if (tvPath.getText().toString().contentEquals(filepath))
+                    tvPath.setText(newPath);
             }
         } catch (JSONException e) {
             e.printStackTrace();
