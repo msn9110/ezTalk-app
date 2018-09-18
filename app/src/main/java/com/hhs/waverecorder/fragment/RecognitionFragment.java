@@ -304,10 +304,15 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
     private void feedback() throws JSONException {
         JSONObject packet = new JSONObject();
-        boolean update = false;
+        boolean update_files = false;
         JSONArray filesNeedToMove = new JSONArray();
         String msg = txtMsg.getText().toString();
         packet.put("sentence", msg);
+        JSONArray zhuyin = new JSONArray();
+        for (int i = 0; i < msg.length(); i++) {
+            zhuyin.put(myLabelList.get(i));
+        }
+        packet.put("zhuyin", zhuyin);
         for (int i = 0; i < rawFiles.size(); i++) {
             String modified = "";
             String mappedFilename = rawFiles.get(i);
@@ -317,7 +322,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 }
             }
             if (modified.length() > 0) {
-                update = true;
+                update_files = true;
                 String original = this.originalSentences.get(i);
                 JSONObject itemContent = new JSONObject();
                 itemContent.put("original", original);
@@ -357,10 +362,9 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
             }
         }
         packet.put("syllableFilesMove", syllableFilesMove);
+        packet.put("update_files", update_files);
         //// TODO: 2018/4/21 add control for local recognition
-        if (update) {
-            new Updater(mContext, packet).start();
-        }
+        new Updater(mContext, packet).start();
 
         try {
             updateFrequency();

@@ -1,5 +1,7 @@
 package com.hhs.waverecorder.fragment;
 
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.media.MediaScannerConnection;
@@ -8,6 +10,8 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -47,6 +51,7 @@ import java.util.Locale;
 
 import static com.hhs.waverecorder.AppValue.*;
 import static com.hhs.waverecorder.utils.MyFile.moveFile;
+import static com.hhs.waverecorder.utils.Utils.getTone;
 import static com.hhs.waverecorder.utils.Utils.lookTable;
 import static com.hhs.waverecorder.utils.Utils.readTables;
 
@@ -89,12 +94,13 @@ public class VoiceCollectFragment extends Fragment implements
     };
 
     //UI Variable
+    ProgressDialog loadingPage;
     ImageButton btnRec;
-    Button btnDel;
+    Button btnDel, btnMoveCursor;
     FrameLayout volView;
     Spinner spMyLabel, spTone;
     MyText txtWord;
-    CheckBox chkUpload, chkTone;
+    CheckBox chkUpload;
     TextView tvRecNOW, tvCorrect, tvTotal, tvPath, tvRes;
     VolumeCircle circle = null;
 
@@ -108,6 +114,7 @@ public class VoiceCollectFragment extends Fragment implements
     String tone = "";
     int correct = 0, total = 0;
     WAVRecorder recorder = null;
+    ArrayList<String> chosenLabels = new ArrayList<>();
 
     //State Variable
     boolean isSentence = false;
@@ -120,10 +127,17 @@ public class VoiceCollectFragment extends Fragment implements
         height = dm.heightPixels;
         dpi = dm.densityDpi;
 
+        // loading page
+        loadingPage = new ProgressDialog(mContext);
+        loadingPage.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        loadingPage.setTitle("辨識中");
+        loadingPage.setMessage("請稍候");
+
         volView = mView.findViewById(R.id.volume);
         txtWord = mView.findViewById(R.id.txtMsg);
         btnRec = mView.findViewById(R.id.btnRec);
         btnDel = mView.findViewById(R.id.btnDel);
+        btnMoveCursor = mView.findViewById(R.id.btnMoveCursor);
         spMyLabel = mView.findViewById(R.id.spMyLabel);
         spTone = mView.findViewById(R.id.spTone);
         tvRecNOW = mView.findViewById(R.id.tvRecNOW);
@@ -132,13 +146,14 @@ public class VoiceCollectFragment extends Fragment implements
         tvCorrect = mView.findViewById(R.id.tvCorrect);
         tvRes = mView.findViewById(R.id.tvRes);
         chkUpload = mView.findViewById(R.id.chkUpload);
-        chkTone = mView.findViewById(R.id.chkTone);
 
         txtWord.setOnCursorChangedListener(this);
+        txtWord.addTextChangedListener(textWatcher);
         spMyLabel.setOnItemSelectedListener(this);
         spTone.setOnItemSelectedListener(this);
         btnRec.setOnClickListener(this);
         btnDel.setOnClickListener(this);
+        btnMoveCursor.setOnClickListener(this);
 
         ArrayAdapter<String> ad = new ArrayAdapter<>(mContext, R.layout.myspinner,
                                     Arrays.asList("0", "1", "2", "3", "4"));
@@ -205,18 +220,23 @@ public class VoiceCollectFragment extends Fragment implements
                 if (!isSentence) {
                     duration = 2500;
                     toRec = label.length() > 0;
-                    if (chkTone.isChecked())
-                        path += "withTone/" + label + "˙_ˊˇˋ".charAt(Integer.parseInt(tone)) + "/";
-                    else
-                        path += "noTone/" + label + "/" + tone + "-";
+                    path += "withTone/" + label.replaceAll("˙_ˊˇˋ", "")
+                            + "˙_ˊˇˋ".charAt(Integer.parseInt(tone)) + "/";
                 } else {
-                    String dir = txtWord.getText().toString()
-                            .replaceAll("[^\u4e00-\u9fa6]+", "-");
-                    toRec = dir.replaceAll("-", "").length() > 0;
+                    String origin_msg = txtWord.getText().toString();
+                    String dir = origin_msg.replaceAll("[^\u4e00-\u9fa6]+", "-");
+                    toRec = dir.replaceAll("-", "").length() > 0 &&
+                            origin_msg.replaceAll("[\u4e00-\u9fa6]", "").length() == 0;
                     path += "sentence/" + dir + "/";
                 }
 
                 path = path.replaceAll("\\s", "") + df.format(new Date()) + ".wav";
+                if (!toRec) {
+                    AlertDialog warn = new AlertDialog.Builder(mContext).setTitle("Warning")
+                                           .setMessage("請輸入一個中文字或全中文句子!!!")
+                                           .create();
+                    warn.show();
+                }
                 if (recorder == null && toRec) {
                     recorder = new WAVRecorder(mContext, path, duration, mUIHandler);
                     circle = new VolumeCircle(mContext, 0, dpi);
@@ -244,34 +264,79 @@ public class VoiceCollectFragment extends Fragment implements
                 break;
         }
     }
+    TextWatcher textWatcher = new TextWatcher() {
+        int cursor;
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int beforecount, int aftercount) {
+            Log.d(TAG, "Trigger TextWatcher");
+            cursor = txtWord.getSelectionEnd();
+        }
 
+        @Override
+        public void onTextChanged(CharSequence s, int start, int beforecount, int aftercount) {
+            boolean insertMode = aftercount > beforecount;
+            Log.d(TAG, "TextWatcher : " + s.toString());
+            start = cursor;
+
+            int endPos = insertMode ? start + aftercount - beforecount : start + beforecount - aftercount;
+            if (insertMode) { // insert mode
+                String addedText = s.toString().substring(start, endPos);
+                for (int i = start; i < endPos; i++) {
+                    String ch = addedText.substring(i - start, i - start + 1);
+                    // avoid no mapping in czTable
+                    chosenLabels.add(i, "-");
+                    int selection = 0;
+                    try {
+                        ArrayList<String> candidate = lookTable(czTable, ch, "pronounces");
+                        if (candidate.size() > 0) {
+                            String myLabel = candidate.get(0);
+                            chosenLabels.set(i, myLabel);
+                        }
+                    } catch (JSONException e) {
+                        Log.w(TAG, "no Mapping In czTable");
+                    }
+                }
+            } else { // delete
+                for (int i = start - 1; i < endPos - 1; i++) {
+                    chosenLabels.remove(i);
+                }
+            }
+
+        }
+
+        @Override
+        public void afterTextChanged(Editable s) {
+
+        }
+    };
     @Override
     public void onCursorChanged(View view) {
         switch (view.getId()) {
             case R.id.txtMsg:
-                String msg = txtWord.getText().toString().replaceAll("[^\u4e00-\u9fa6]", "");
-                ArrayList<String> noToneLabels = new ArrayList<>();
-                noToneLabels.add("-");
+                int pos = txtWord.getSelectionEnd();
+                String msg = txtWord.getText().toString();
+                ArrayList<String> labels = new ArrayList<>();
+                labels.add("-");
                 int selection = 0;
-                if (msg.length() == 1) {
-                    isSentence = false;
-                    String ch = msg;
+                if (msg.length() >= 1) {
+                    isSentence = !(msg.replaceAll("[^\u4e00-\u9fa6]", "").length() == 1);
+                    String ch = (pos >= 1) ? msg.substring(pos - 1, pos) : msg.substring(0, 1);
                     try {
                         ArrayList<String> pronounces = lookTable(czTable, ch, "pronounces");
-                        selection = 1;
                         for (String p:pronounces) {
-                            String noToneLabel = p.replaceAll("[˙ˊˇˋ]$", "");
-                            if (!noToneLabels.contains(noToneLabel)) {
-                                noToneLabels.add(noToneLabel);
+                            String label = p;
+                            if (!labels.contains(label)) {
+                                labels.add(label);
                             }
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
+                    } finally {
+                        int idx = (pos >= 1) ? pos - 1 : 0;
+                        selection = labels.indexOf(chosenLabels.get(idx));
                     }
-                } else if (msg.length() > 1) {
-                    isSentence = true;
                 }
-                ArrayAdapter<String> ad = new ArrayAdapter<>(mContext, R.layout.myspinner, noToneLabels);
+                ArrayAdapter<String> ad = new ArrayAdapter<>(mContext, R.layout.myspinner, labels);
                 ad.setDropDownViewResource(R.layout.myspinner);
                 spMyLabel.setAdapter(ad);
                 spMyLabel.setSelection(selection, true);
@@ -291,8 +356,10 @@ public class VoiceCollectFragment extends Fragment implements
             case R.id.spMyLabel:
                 label = "";
                 if (pos > 0) {
+                    int idx = (txtWord.getSelectionEnd() >= 1) ? txtWord.getSelectionEnd() - 1 : 0;
                     label = ((TextView) view).getText().toString();
-                    spTone.setSelection(1, true);
+                    chosenLabels.set(idx, label);
+                    spTone.setSelection(getTone(label), true);
                 }
                 break;
             case R.id.spTone:
@@ -321,8 +388,10 @@ public class VoiceCollectFragment extends Fragment implements
             tvTotal.setText("已錄 : " + total);
             recordedPath.addFirst(path);
             tvPath.setText(path);
-            if (chkUpload.isChecked())
+            if (chkUpload.isChecked()) {
+                loadingPage.show();
                 new Recognition(mContext, path, mUIHandler).start();
+            }
         } else {
             file.delete();
             MediaScannerConnection.scanFile(mContext, new String[]{path}, null, null);
@@ -331,8 +400,9 @@ public class VoiceCollectFragment extends Fragment implements
 
     @Override
     public void onFinishRecognition(String result, String filepath) {
+        loadingPage.dismiss();
         File file = new File(filepath);
-        String correctLabel = file.getParentFile().getName();
+        String correctLabel = file.getParentFile().getName().replaceAll("[_˙ˊˇˋ]", "");
         try {
             JSONObject response = new JSONObject(result).getJSONObject("response");
             int numOfWord = response.getInt("success");
@@ -343,12 +413,16 @@ public class VoiceCollectFragment extends Fragment implements
                 String myResult = "";
                 JSONArray lists = response.getJSONArray("result_lists");
                 if (numOfWord == 1) {
+                    int pos = -1;
                     JSONArray jsonArray = lists.getJSONArray(0);
                     for (int i = 0; i < jsonArray.length(); i++) {
                         myResult += jsonArray.getString(i) + ",";
-                        if (correctLabel.contentEquals(jsonArray.getString(i)))
+                        if (correctLabel.contentEquals(jsonArray.getString(i))) {
+                            pos = i + 1;
                             correct++;
+                        }
                     }
+                    myResult = "(" + pos + "/" + jsonArray.length() + ")\n" + myResult;
                 } else {
                     myResult = response.getString("sentence");
                     if (correctLabel.contentEquals(myResult))

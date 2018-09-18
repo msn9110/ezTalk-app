@@ -9,17 +9,31 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:layout_margin="20dp">
-
-            <com.hhs.waverecorder.widget.MyText
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:id="@+id/txtMsg"
-                android:textAlignment="center"
-                android:textSize="50sp"
-                android:layout_margin="20dp"
-                android:layout_gravity="center"
-                tools:text="我"
-                />
+                android:orientation="horizontal">
+                <com.hhs.waverecorder.widget.MyText
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:id="@+id/txtMsg"
+                    android:textAlignment="center"
+                    android:textSize="50sp"
+                    android:layout_margin="20dp"
+                    android:layout_gravity="center"
+                    tools:text="我"
+                    />
+                <Button
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_weight="8"
+                    android:layout_margin="20dp"
+                    android:text=">"
+                    android:textSize="30sp"
+                    android:id="@+id/btnMoveCursor"/>
+            </LinearLayout>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -36,6 +50,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="noToneLabel:"
+                        android:id="@+id/lbMyLabel"
                         android:textSize="35sp"
                         android:layout_marginTop="10dp"
                         android:layout_marginBottom="5dp"/>
@@ -81,14 +96,6 @@
                 android:text="上傳檔案"
                 android:textSize="25sp"
                 android:id="@+id/chkUpload"/>
-
-            <CheckBox
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="10dp"
-                android:text="檔名有聲調"
-                android:textSize="25sp"
-                android:id="@+id/chkTone"/>
 
         </LinearLayout>
         <TextView
