@@ -390,7 +390,19 @@ public class VoiceCollectFragment extends Fragment implements
             tvPath.setText(path);
             if (chkUpload.isChecked()) {
                 loadingPage.show();
-                new Recognition(mContext, path, mUIHandler).start();
+                JSONObject extra = new JSONObject();
+                JSONArray zhuyin = new JSONArray();
+                for (int i = 0; i < txtWord.toString().length(); i++) {
+                    zhuyin.put(chosenLabels.get(i));
+                }
+                try {
+                    extra.put("zhuyin", zhuyin);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    extra = null;
+                } finally {
+                    new Recognition(mContext, path, mUIHandler, extra).start();
+                }
             }
         } else {
             file.delete();
@@ -424,8 +436,22 @@ public class VoiceCollectFragment extends Fragment implements
                     }
                     myResult = "(" + pos + "/" + jsonArray.length() + ")\n" + myResult;
                 } else {
-                    myResult = response.getString("sentence");
-                    if (correctLabel.contentEquals(myResult))
+                    for (int i = 0; i < numOfWord; i++) {
+                        JSONArray jsonArray = lists.getJSONArray(i);
+                        int pos = -1;
+                        String label = chosenLabels.get(i).replaceAll("[˙ˊˇˋ_]", "");
+                        for (int j = 0; j < jsonArray.length(); j++) {
+                            String res = jsonArray.getString(j);
+                            if (label.contentEquals(res)) {
+                                pos = j + 1;
+                                break;
+                            }
+                        }
+                        myResult += "(" + pos + "/" + jsonArray.length() + "), ";
+                    }
+                    String sentence = response.getString("sentence");
+                    myResult += "\n" + sentence;
+                    if (correctLabel.contentEquals(sentence))
                         correct++;
                 }
 

@@ -307,6 +307,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         boolean update_files = false;
         JSONArray filesNeedToMove = new JSONArray();
         String msg = txtMsg.getText().toString();
+        ArrayList<String> files = new ArrayList<>();
         packet.put("sentence", msg);
         JSONArray zhuyin = new JSONArray();
         for (int i = 0; i < msg.length(); i++) {
@@ -334,10 +335,9 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                                       + "/tmp/" + mappedFilename;
                 String newPath = Environment.getExternalStoragePublicDirectory("MyRecorder")
                                  + "/sentence/" + modified + "/uploaded-" + mappedFilename;
-                if (MyFile.moveFile(originalPath, newPath)) {
-                    MediaScannerConnection.scanFile(mContext, new String[]{originalPath, newPath},
-                                                    null, null);
-                }
+                files.add(originalPath);
+                files.add(newPath);
+
             }
         }
         rawFiles.clear();
@@ -364,7 +364,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         packet.put("syllableFilesMove", syllableFilesMove);
         packet.put("update_files", update_files);
         //// TODO: 2018/4/21 add control for local recognition
-        new Updater(mContext, packet).start();
+
+        new Updater(mContext, packet, files, null).start();
 
         try {
             updateFrequency();
@@ -789,7 +790,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         isVoiceInput = true;
 
         loadingPage.show();
-        new Recognition(mContext, path, mUIHandler).start(); // ###STEP 2-1###
+        new Recognition(mContext, path, mUIHandler, null).start(); // ###STEP 2-1###
     }
 
     // ###STEP 3###

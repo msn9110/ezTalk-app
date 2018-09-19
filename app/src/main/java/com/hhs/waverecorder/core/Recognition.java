@@ -13,6 +13,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -31,11 +32,13 @@ public class Recognition extends Thread {
     private File mFile;
     private Context mContext;
     private Handler mHandler;
+    private JSONObject extra;
 
-    public Recognition(Context context, String path, Handler uiHandler) {
+    public Recognition(Context context, String path, Handler uiHandler, JSONObject extra) {
         mContext = context;
         mFile = new File(path);
         mHandler = uiHandler;
+        this.extra = extra;
     }
 
     @Override
@@ -55,9 +58,14 @@ public class Recognition extends Thread {
             for (int i = 0; i < raws.length; i++)
                 raw[i] = 0xff & raws[i];
             JSONArray rawData = new JSONArray(Arrays.asList(raw));
+            String extraData = "";
+            if (extra != null) {
+                extraData += ", \"extraData\":" + extra.toString();
+            }
             String json = "{\"data\":{\"label\":\"" + label + "\","
                             + "\"filename\":\"" + mFile.getName() + "\", \"raw\":"
-                            + rawData.getJSONArray(0).toString() + "}}";
+                            + rawData.getJSONArray(0).toString() + "}"
+                            + extraData + "}";
             StringEntity s = new StringEntity(json, "UTF-8");
             //s.setContentEncoding("UTF-8");
             //s.setContentType("application/json");

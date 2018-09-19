@@ -4,6 +4,8 @@ package com.hhs.waverecorder.core;
 import android.content.Context;
 import android.media.MediaScannerConnection;
 
+import com.hhs.waverecorder.utils.MyFile;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -23,12 +25,14 @@ import java.util.ArrayList;
 public class Updater extends Thread {
     private Context mContext;
     private JSONObject mUpdateData;
-    //private final ArrayList<File> mFiles;
+    private JSONObject extra;
+    private final ArrayList<String> mFiles;
 
-    public Updater(Context context, JSONObject data) {
+    public Updater(Context context, JSONObject data, ArrayList<String> files, JSONObject extra) {
         mContext = context;
         mUpdateData = data;
-        //mFiles = files;
+        this.extra = extra;
+        mFiles = files;
     }
 
     @Override
@@ -40,7 +44,12 @@ public class Updater extends Thread {
         String url = "http://" + host + port + apiName;
 
         try {
-            StringEntity entity = new StringEntity(mUpdateData.toString(), "UTF-8");
+            String extraData = "}";
+            if (extra != null) {
+                extraData += ", \"extraData\":" + extra.toString() + "}";
+            }
+            String data = mUpdateData.toString();//.replaceFirst("}$", "") + extraData;
+            StringEntity entity = new StringEntity(data, "UTF-8");
             HttpClient httpClient = new DefaultHttpClient();
             HttpPut httpPut = new HttpPut(url);
             httpPut.setHeader("Accept", "application/json");
@@ -54,17 +63,19 @@ public class Updater extends Thread {
             boolean success = response.getBoolean("success");
             JSONObject movedFilesState = response.getJSONObject("movedFilesState");
             if (success) {
-                /*
-                for (File f:mFiles) {
-                    String originPath = f.getAbsolutePath();
-                    String newName = "uploaded-" + f.getName();
-                    File dest = new File(f.getParentFile(), newName);
-                    if (movedFilesState.getBoolean(f.getName()) && f.renameTo(dest)) {
-                        MediaScannerConnection.scanFile(mContext, new String[] {dest.getAbsolutePath(), originPath},
-                                                        null, null);
+                if (mFiles.size() > 0) {
+                    for (int i = 0; i < mFiles.size(); i+=2) {
+                        String originalPath = mFiles.get(i);
+                        String newPath = mFiles.get(i + 1);
+                        String name = new File(originalPath).getName();
+                        if (movedFilesState.getBoolean(name)) {
+                            if (MyFile.moveFile(originalPath, newPath)) {
+                                MediaScannerConnection.scanFile(mContext, new String[]{originalPath, newPath},
+                                        null, null);
+                            }
+                        }
                     }
                 }
-                */
             }
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
