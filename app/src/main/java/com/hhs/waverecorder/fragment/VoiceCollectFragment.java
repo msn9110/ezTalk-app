@@ -392,7 +392,7 @@ public class VoiceCollectFragment extends Fragment implements
                 loadingPage.show();
                 JSONObject extra = new JSONObject();
                 JSONArray zhuyin = new JSONArray();
-                for (int i = 0; i < txtWord.toString().length(); i++) {
+                for (int i = 0; i < chosenLabels.size(); i++) {
                     zhuyin.put(chosenLabels.get(i));
                 }
                 try {
