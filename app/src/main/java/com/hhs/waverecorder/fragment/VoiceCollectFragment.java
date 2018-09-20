@@ -262,6 +262,10 @@ public class VoiceCollectFragment extends Fragment implements
                     tvTotal.setText("已錄 : " + total);
                 }
                 break;
+
+            case R.id.btnMoveCursor:
+                txtWord.setSelection((txtWord.getSelectionEnd() + 1) % (txtWord.length() + 1));
+                break;
         }
     }
     TextWatcher textWatcher = new TextWatcher() {
