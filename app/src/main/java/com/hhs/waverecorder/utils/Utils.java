@@ -1,6 +1,7 @@
 package com.hhs.waverecorder.utils;
 
 import android.content.Context;
+import android.media.MediaScannerConnection;
 import android.os.Environment;
 
 import org.json.JSONArray;
@@ -124,7 +125,7 @@ public final class Utils {
     }
 
     // store ZCTABLE CZTABLE
-    public static void storeTable(JSONObject table) {
+    public static void storeTable(JSONObject table, Context context) {
         JSONObject zcTable = null, czTable = null;
 
         try {
@@ -134,13 +135,17 @@ public final class Utils {
             e.printStackTrace();
         }
         if (zcTable != null) {
-            String outStr = zcTable.toString().replaceAll("(\\],)", "$0\n");
-            MyFile.writeStringToFile(outStr, new File(Environment.getExternalStoragePublicDirectory("tables"), ZCTABLE));
+            String outStr = zcTable.toString().replaceAll("(\\],)", "$0\n\n");
+            File f = new File(Environment.getExternalStoragePublicDirectory("tables"), ZCTABLE);
+            MyFile.writeStringToFile(outStr, f);
+            MediaScannerConnection.scanFile(context, new String[]{f.getAbsolutePath()}, null, null);
         }
 
         if (czTable != null) {
-            String outStr = czTable.toString().replaceAll("(\\],)", "$0\n");
-            MyFile.writeStringToFile(outStr, new File(Environment.getExternalStoragePublicDirectory("tables"), CZTABLE));
+            String outStr = czTable.toString().replaceAll("(\\]\\},)", "$0\n\n");
+            File f = new File(Environment.getExternalStoragePublicDirectory("tables"), CZTABLE);
+            MyFile.writeStringToFile(outStr, f);
+            MediaScannerConnection.scanFile(context, new String[]{f.getAbsolutePath()}, null, null);
         }
     }
 

@@ -264,14 +264,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         super.onStop();
         speaker.stop();
         mContext.unregisterReceiver(eventReceiver);
-        try {
-            JSONObject tables = new JSONObject()
-                                .put("zcTable", zcTable)
-                                .put("czTable", czTable);
-            storeTable(tables);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+
     }
 
     @Override
@@ -296,8 +289,22 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
             // start to update myDic
             String noToneLabel = myLabel.replaceAll("[˙ˊˇˋ]", "");
-            zcTable = updateOAO(noToneLabel, myLabel, zcTable, noToneLabel);
+            zcTable = updateOAO(noToneLabel, word, zcTable, noToneLabel);
             // end of update myDic
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        JSONObject tables = new JSONObject()
+                                .put("zcTable", zcTable)
+                                .put("czTable", czTable);
+                        storeTable(tables, mContext);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }).start();
         }
     }
 
@@ -367,11 +374,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
         new Updater(mContext, packet, files, null).start();
 
-        try {
-            updateFrequency();
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        updateFrequency();
     }
 
     private void talk() {
