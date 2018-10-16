@@ -220,7 +220,7 @@ public class VoiceCollectFragment extends Fragment implements
                 if (!isSentence) {
                     duration = 2500;
                     toRec = label.length() > 0;
-                    path += "withTone/" + label.replaceAll("˙_ˊˇˋ", "")
+                    path += "withTone/" + label.replaceAll("[˙_ˊˇˋ]", "")
                             + "˙_ˊˇˋ".charAt(Integer.parseInt(tone)) + "/";
                 } else {
                     String origin_msg = txtWord.getText().toString();
