@@ -32,6 +32,7 @@ public class WAVRecorder {
 
     private static final double BASE_VOLUME = 327.67;
 
+    private boolean isSilence = true;
     private AudioRecord recorder = null;
     private int bufferSize = 0;
     private Thread recordingThread = null;
@@ -156,6 +157,8 @@ public class WAVRecorder {
                             Message msg = new Message();
                             msg.what = UPDATE_VOLUME_CIRCLE; // volume level
                             msg.arg1 = level;
+                            if (isSilence && level >= 25)
+                                isSilence = false;
                             mUIHandler.sendMessage(msg);
                         }
                     });
@@ -211,9 +214,12 @@ public class WAVRecorder {
             recordingThread = null;
         }
 
-        copyWaveFile(getTempFilename(), getFilename());
+        if (!isSilence && new File(getTempFilename()).length() >= RECORDER_SAMPLERATE) {
+            copyWaveFile(getTempFilename(), getFilename());
+            MediaScannerConnection.scanFile(mContext, new String[] {output},
+                    null, null);
+        }
         deleteTempFile();
-        MediaScannerConnection.scanFile(mContext, new String[] {output}, null, null);
         Intent intent = new Intent(RECORD_FINISHED_ACTION);
         intent.putExtra("filepath", output);
         mContext.sendBroadcast(intent);

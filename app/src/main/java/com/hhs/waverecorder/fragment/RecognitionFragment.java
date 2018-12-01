@@ -341,7 +341,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 String originalPath = Environment.getExternalStoragePublicDirectory("MyRecorder")
                                       + "/tmp/" + mappedFilename;
                 String newPath = Environment.getExternalStoragePublicDirectory("MyRecorder")
-                                 + "/sentence/" + modified + "/uploaded-" + mappedFilename;
+                                 + "/uploaded/sentence/" + modified + "/" + mappedFilename;
                 files.add(originalPath);
                 files.add(newPath);
 
@@ -791,9 +791,10 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         circle = null;
         // non UI
         isVoiceInput = true;
-
-        loadingPage.show();
-        new Recognition(mContext, path, mUIHandler, null).start(); // ###STEP 2-1###
+        if (new File(path).exists()) {
+            loadingPage.show();
+            new Recognition(mContext, path, mUIHandler, null).start(); // ###STEP 2-1###
+        }
     }
 
     // ###STEP 3###

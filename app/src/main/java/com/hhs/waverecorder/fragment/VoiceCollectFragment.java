@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.IntentFilter;
 import android.media.MediaScannerConnection;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.Nullable;
@@ -387,7 +388,7 @@ public class VoiceCollectFragment extends Fragment implements
         circle = null;
         // non UI
         File file = new File(path);
-        if (file.length() > 44) {
+        if (file.exists()) {
             total++;
             tvTotal.setText("已錄 : " + total);
             recordedPath.addFirst(path);
@@ -408,9 +409,6 @@ public class VoiceCollectFragment extends Fragment implements
                     new Recognition(mContext, path, mUIHandler, extra).start();
                 }
             }
-        } else {
-            file.delete();
-            MediaScannerConnection.scanFile(mContext, new String[]{path}, null, null);
         }
     }
 
@@ -474,9 +472,12 @@ public class VoiceCollectFragment extends Fragment implements
                 tvTotal.setText("已錄 : " + total);
             }
 
+            String root = Environment.getExternalStoragePublicDirectory("MyRecorder")
+                    .getAbsolutePath();
             if (!flag && uploaded) {
                 recordedPath.removeFirst();
-                String newPath = file.getParent() + "/uploaded-" + file.getName();
+                String relativePath = file.getAbsolutePath().replaceFirst(root + "/", "");
+                String newPath = root + "/uploaded/" + relativePath;
                 recordedPath.addFirst(newPath);
                 moveFile(filepath, newPath);
                 MediaScannerConnection.scanFile(mContext, new String[]{filepath, newPath}, null, null);
