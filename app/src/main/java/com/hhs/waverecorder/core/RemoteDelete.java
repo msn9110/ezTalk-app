@@ -21,7 +21,8 @@ public class RemoteDelete {
     
     public void executeRemoteDelete() {
         final String filename = mFile.getName();
-        if (filename.startsWith("uploaded-")){
+        if (mFile.getAbsolutePath().replaceAll("upload", "").length() <
+                mFile.getAbsolutePath().length()){
             Thread worker = new Thread(new Runnable() {
                 @Override
                 public void run() {

@@ -338,7 +338,8 @@ public class VoiceCollectFragment extends Fragment implements
                         e.printStackTrace();
                     } finally {
                         int idx = (pos >= 1) ? pos - 1 : 0;
-                        selection = labels.indexOf(chosenLabels.get(idx));
+                        if (chosenLabels.size() > 0)
+                            selection = labels.indexOf(chosenLabels.get(idx));
                     }
                 }
                 ArrayAdapter<String> ad = new ArrayAdapter<>(mContext, R.layout.myspinner, labels);
