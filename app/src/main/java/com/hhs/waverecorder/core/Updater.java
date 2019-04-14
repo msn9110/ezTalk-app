@@ -16,10 +16,16 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
+
+import static com.hhs.waverecorder.core.Recognition.getJSONString;
 
 @SuppressWarnings("all")
 public class Updater extends Thread {
@@ -42,6 +48,7 @@ public class Updater extends Thread {
         String port = ":5000";
         String apiName = "/updates";
         String url = "http://" + host + port + apiName;
+        HttpURLConnection conn = null;
 
         try {
             String extraData = "}";
@@ -49,6 +56,25 @@ public class Updater extends Thread {
                 extraData += ", \"extraData\":" + extra.toString() + "}";
             }
             String data = mUpdateData.toString();//.replaceFirst("}$", "") + extraData;
+/*
+            URL u = new URL(url);
+            conn = (HttpURLConnection) u.openConnection();
+            conn.setRequestMethod("PUT");
+            conn.setRequestProperty("Content-Type","application/json; charset=UTF-8");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoInput(true);
+            conn.setDoOutput(true);
+            conn.setUseCaches(false);
+
+            OutputStream os = conn.getOutputStream();
+            DataOutputStream writer = new DataOutputStream(os);
+            writer.writeBytes(data);
+            os.flush();
+            os.close();
+
+            String myResult = getJSONString(conn.getInputStream());
+
+            */
             StringEntity entity = new StringEntity(data, "UTF-8");
             HttpClient httpClient = new DefaultHttpClient();
             HttpPut httpPut = new HttpPut(url);
@@ -58,7 +84,8 @@ public class Updater extends Thread {
             HttpResponse httpResponse = httpClient.execute(httpPut);
             HttpEntity httpEntity = httpResponse.getEntity();
 
-            String myResult = Recognition.getJSONString(httpEntity);
+            String myResult = getJSONString(httpEntity.getContent());
+
             JSONObject response = new JSONObject(myResult);
             boolean success = response.getBoolean("success");
             JSONObject movedFilesState = response.getJSONObject("movedFilesState");
@@ -85,6 +112,9 @@ public class Updater extends Thread {
             e.printStackTrace();
         } catch (JSONException e) {
             e.printStackTrace();
+        } finally {
+            if (conn != null)
+                conn.disconnect();
         }
     }
 }

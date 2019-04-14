@@ -2,6 +2,7 @@ package com.hhs.waverecorder.core;
 
 import android.content.Context;
 import android.content.Intent;
+import android.net.http.HttpsConnection;
 import android.os.Handler;
 import android.widget.Toast;
 
@@ -16,12 +17,16 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Arrays;
 
 import static com.hhs.waverecorder.AppValue.*;
@@ -50,6 +55,7 @@ public class Recognition extends Thread {
         String port = ":5000";
         String apiName = "/recognize";
         String url = "http://" + host + port + apiName;
+        HttpURLConnection conn = null;
         try {
             byte[] raws = new byte[(int)mFile.length()];
             FileInputStream in = new FileInputStream(mFile);
@@ -69,6 +75,25 @@ public class Recognition extends Thread {
             StringEntity s = new StringEntity(json, "UTF-8");
             //s.setContentEncoding("UTF-8");
             //s.setContentType("application/json");
+/*
+            URL u = new URL(url);
+            conn = (HttpURLConnection) u.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type","application/json; charset=UTF-8");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoInput(true);
+            conn.setDoOutput(true);
+            conn.setUseCaches(false);
+
+            OutputStream os = conn.getOutputStream();
+            DataOutputStream writer = new DataOutputStream(os);
+            writer.writeBytes(json);
+            os.flush();
+            os.close();
+
+            String myResult = getJSONString(conn.getInputStream());
+
+            */
 
             HttpClient httpClient = new DefaultHttpClient();
             HttpPost httpPost = new HttpPost(url);
@@ -78,7 +103,8 @@ public class Recognition extends Thread {
             HttpResponse httpResponse = httpClient.execute(httpPost);
             HttpEntity httpEntity = httpResponse.getEntity();
 
-            String myResult = getJSONString(httpEntity);
+            String myResult = getJSONString(httpEntity.getContent());
+
             Intent intent = new Intent(RECOGNITION_FINISHED_ACTION);
             intent.putExtra("response", myResult);
             intent.putExtra("filepath", mFile.getAbsolutePath());
@@ -91,6 +117,9 @@ public class Recognition extends Thread {
             result = "POST Error";
         } catch (JSONException e) {
             e.printStackTrace();
+        } finally {
+            if (conn != null)
+                conn.disconnect();
         }
 
         onPostExecute(result);
@@ -106,8 +135,7 @@ public class Recognition extends Thread {
 
     }
 
-    public static String getJSONString(HttpEntity httpEntity) throws IOException {
-        InputStream is = httpEntity.getContent();
+    public static String getJSONString(InputStream is) throws IOException {
 
         BufferedReader bufReader = new BufferedReader(new InputStreamReader(is, "utf-8"), 8);
         StringBuilder builder = new StringBuilder();
