@@ -14,7 +14,7 @@ apply plugin: 'com.android.application'
         }
 
     defaultConfig {
-        applicationId "com.hhs.wavrecorder"
+        applicationId "com.hhs.wavrecorder.dev"
         minSdkVersion 15
         targetSdkVersion 28
         versionCode 1

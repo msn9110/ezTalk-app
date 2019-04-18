@@ -38,12 +38,18 @@ public class Recognition extends Thread {
     private Context mContext;
     private Handler mHandler;
     private JSONObject extra;
+    private HttpPost httpPost = null;
 
     public Recognition(Context context, String path, Handler uiHandler, JSONObject extra) {
         mContext = context;
         mFile = new File(path);
         mHandler = uiHandler;
         this.extra = extra;
+    }
+
+    public void stopRecognition() {
+        if (httpPost != null)
+            httpPost = null;
     }
 
     @Override
@@ -96,7 +102,7 @@ public class Recognition extends Thread {
             */
 
             HttpClient httpClient = new DefaultHttpClient();
-            HttpPost httpPost = new HttpPost(url);
+            httpPost = new HttpPost(url);
             httpPost.setHeader("Accept", "application/json");
             httpPost.setHeader("Content-type", "application/json");
             httpPost.setEntity(s);

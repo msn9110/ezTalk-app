@@ -27,6 +27,7 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 
 import com.example.hhs.wavrecorder.R;
+import com.hhs.waverecorder.fragment.RecoFragment;
 import com.hhs.waverecorder.fragment.RecognitionFragment;
 import com.hhs.waverecorder.fragment.VoiceCollectFragment;
 
@@ -98,7 +99,7 @@ public class MainActivity extends AppCompatActivity
         super.onStart();
         Log.i(TAG, "onStart");
         if (currentFragment == null)
-            replaceFragment(new RecognitionFragment());
+            replaceFragment(new RecoFragment());
     }
 
     @Override
@@ -182,6 +183,10 @@ public class MainActivity extends AppCompatActivity
 
             case R.id.nav_fragment_recognition:
                 mFragment = new RecognitionFragment();
+                break;
+
+            case R.id.nav_fragment_recognition2:
+                mFragment = new RecoFragment();
                 break;
         }
 

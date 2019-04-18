@@ -2,6 +2,7 @@ package com.hhs.waverecorder.fragment;
 
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.IntentFilter;
 import android.media.MediaScannerConnection;
 import android.os.Bundle;
@@ -22,6 +23,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ListView;
@@ -106,7 +108,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     FrameLayout volView;
     VolumeCircle circle = null;
     TextView tvRecNOW;
-    ProgressDialog loadingPage;
+    ProgressDialog loadingPage = null;
     ArrayList<String> recognitionList = new ArrayList<>(); // to store recognition zhuyin without tone
     ArrayList<String> wordsList = new ArrayList<>(); // to show all possible chinese word according to selected no tone zhuyin
     ArrayList<String> displayLabelList = new ArrayList<>(); // to show all zhuyin with tone of the first chinese word behind cursor
@@ -147,12 +149,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         volView = mView.findViewById(R.id.volume);
         tvRecNOW = mView.findViewById(R.id.tvRecNOW);
 
-        // loading page
-        loadingPage = new ProgressDialog(mContext);
-        loadingPage.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        loadingPage.setTitle("辨識中");
-        loadingPage.setMessage("請稍候");
-
         lvResults = mView.findViewById(R.id.lvResults);
         spMyLabel = mView.findViewById(R.id.pronounceSpinner);
         lvWords = mView.findViewById(R.id.lvWords);
@@ -168,12 +164,14 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         btnTalk.setOnClickListener(this);
         btnClear.setOnClickListener(this);
         btnBack.setOnClickListener(this);
+        btnBack.setVisibility(View.GONE);
         btnMoveCursor.setOnClickListener(this);
         btnMoveCursor.setOnLongClickListener(this);
 
         // For EditText or TextView
         txtMsg.setOnCursorChangedListener(this);
         txtMsg.addTextChangedListener(textWatcher);
+        txtMsg.setShowSoftInputOnFocus(false);
 
         // For ListView or Spinner
         recognitionList.clear();
@@ -662,11 +660,28 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         wordsList.clear();
         ad3.setSelectPosition(position);
         if (position == 0) {
-            if (txtMsg.getSelectionEnd() > 0 && !longClick) {
-                int cursor = txtMsg.getSelectionEnd();
-                modifiedByKeyboard = true;
-                txtMsg.setSelection(cursor - 1, cursor);
-                showSoftKeyboard(txtMsg, mContext);
+            if (txtMsg.getSelectionEnd() > 0) {
+                if (longClick) {
+                    int cursor = txtMsg.getSelectionEnd();
+                    modifiedByKeyboard = true;
+                    txtMsg.setSelection(cursor - 1, cursor);
+                    showSoftKeyboard(txtMsg, mContext);
+                } else {
+                    final EditText editText = new EditText(mContext);
+                    int pos = txtMsg.getSelectionEnd();
+                    String clip_name = waveFiles.get(pos - 1);
+                    if (clip_name.length() > 0) {
+                        String suffix = clip_name.split("-")[2];
+                        String stn = "";
+                        String msg = txtMsg.getText().toString();
+                        for (int i = 0; i < msg.length(); i++) {
+                            String file = waveFiles.get(i);
+                            if (file.endsWith(suffix)) {
+                                stn += msg.substring(i, i + 1);
+                            }
+                        }
+                    }
+                }
             }
             ad2.notifyDataSetChanged();
             return;
@@ -792,8 +807,24 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         // non UI
         isVoiceInput = true;
         if (new File(path).exists()) {
+
+            final Recognition recognition =
+                    new Recognition(mContext, path, mUIHandler, null);
+            recognition.start(); // ###STEP 2-1###
+            // loading page
+            loadingPage = new ProgressDialog(mContext);
+            loadingPage.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+            loadingPage.setTitle("辨識中");
+            loadingPage.setMessage("請稍候");
+            loadingPage.setCanceledOnTouchOutside(false);
+            loadingPage.setCancelable(false);
+            loadingPage.setOnCancelListener(new DialogInterface.OnCancelListener() {
+                @Override
+                public void onCancel(DialogInterface dialogInterface) {
+
+                }
+            });
             loadingPage.show();
-            new Recognition(mContext, path, mUIHandler, null).start(); // ###STEP 2-1###
         }
     }
 
@@ -858,6 +889,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                     Log.i(TAG, "replace word:" + String.valueOf(msgPos + 1));
                 }
                 txtMsg.setSelection(cursor + 1);
+                txtMsg.setSelection(txtMsg.getText().length());
                 isVoiceInput = false;
 
                 debug();
@@ -871,6 +903,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
             e.printStackTrace();
         } finally {
             loadingPage.dismiss();
+            loadingPage = null;
         }
     }
 
