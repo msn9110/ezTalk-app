@@ -69,7 +69,7 @@ public class WAVRecorder {
         this.mContext = context;
         mUIHandler = handler;
         output = Environment.getExternalStorageDirectory() + "/" + path;
-        final int max = 40 * 1000; // max duration
+        final int max = 300 * 1000; // max duration
         if (millis < 0)
             millis = max;
         else if (millis < 1000)
