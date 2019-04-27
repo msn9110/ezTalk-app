@@ -49,6 +49,7 @@ import java.util.Locale;
 import static com.hhs.waverecorder.AppValue.RECOGNITION_FINISHED_ACTION;
 import static com.hhs.waverecorder.AppValue.RECORD_FINISHED_ACTION;
 import static com.hhs.waverecorder.AppValue.UPDATE_VOLUME_CIRCLE;
+import static com.hhs.waverecorder.MainActivity.showSoftKeyboard;
 import static com.hhs.waverecorder.utils.Utils.getTone;
 import static com.hhs.waverecorder.utils.Utils.readTables;
 
@@ -135,7 +136,16 @@ public class RecoFragment extends Fragment implements VoiceInputListener,
                 public void onClick(View view) {
                     lvResults.performItemClick(lvResults.getAdapter().getView(idx + 1, null, null),
                             idx + 1, idx + 1);
-                    talk();
+                    talk(false);
+                }
+            });
+            btnf[i].setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View view) {
+                    lvResults.performItemClick(lvResults.getAdapter().getView(idx + 1, null, null),
+                            idx + 1, idx + 1);
+                    talk(true);
+                    return true;
                 }
             });
         }
@@ -144,6 +154,9 @@ public class RecoFragment extends Fragment implements VoiceInputListener,
         btnRec.setOnClickListener(this);
         btnTalk.setOnClickListener(this);
         btnClear.setOnClickListener(this);
+        btnRec.setOnLongClickListener(this);
+        btnTalk.setOnLongClickListener(this);
+        btnClear.setOnLongClickListener(this);
         btnBack.setOnClickListener(this);
         btnBack.setVisibility(View.GONE);
         btnMoveCursor.setOnClickListener(this);
@@ -152,8 +165,8 @@ public class RecoFragment extends Fragment implements VoiceInputListener,
 
         // For ListView or Spinner
         recognitionList.clear();
-        recognitionList.add("-");
-        recognitionList.add("1.畫面測試");
+        recognitionList.add("-沒有想要的句子(按我自行輸入吧！！！)-");
+        //recognitionList.add("1.畫面測試");
 
         ad2 = new ArrayAdapter<String>(mContext, android.R.layout.simple_list_item_1, recognitionList){
             @NonNull
@@ -257,7 +270,7 @@ public class RecoFragment extends Fragment implements VoiceInputListener,
                 txtMsg.setText("");
                 JSONArray candidates = response.getJSONArray("sentence_candidates");
                 recognitionList.clear();
-                recognitionList.add("-");
+                recognitionList.add("-沒有想要的句子(按我自行輸入吧！！！)-");
                 disableBtnf();
                 for (int i = 0; i < candidates.length(); i++) {
                     String stn = String.valueOf(i + 1) + "." + candidates.getString(i);
@@ -298,7 +311,7 @@ public class RecoFragment extends Fragment implements VoiceInputListener,
                 }
                 break;
             case R.id.btnTalk:
-                talk();
+                talk(false);
                 break;
             case R.id.btnClear:
                 clear();
@@ -309,7 +322,20 @@ public class RecoFragment extends Fragment implements VoiceInputListener,
 
     @Override
     public boolean onLongClick(View view) {
-        return false;
+        switch (view.getId()) {
+            case R.id.btnRec:
+
+                break;
+            case R.id.btnTalk:
+                talk(true);
+                break;
+            case R.id.btnClear:
+                txtMsg.setText("");
+                showSoftKeyboard(txtMsg, mContext);
+                break;
+
+        }
+        return true;
     }
 
     @Override
@@ -317,7 +343,8 @@ public class RecoFragment extends Fragment implements VoiceInputListener,
         switch (adapterView.getId()) {
             case R.id.lvResults:
                 if (i == 0) {
-
+                    txtMsg.setText("");
+                    showSoftKeyboard(txtMsg, mContext);
                 } else {
                     String msg = ((TextView) view).getText().toString().split("\\.")[1];
                     txtMsg.setText(msg);
@@ -333,7 +360,7 @@ public class RecoFragment extends Fragment implements VoiceInputListener,
 
     @Override
     public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
-        return false;
+        return true;
     }
 
     @Override
@@ -382,7 +409,7 @@ public class RecoFragment extends Fragment implements VoiceInputListener,
         new Updater(mContext, packet, files, null).start();
     }
 
-    private void talk() {
+    private void talk(boolean longclick) {
         speaker.addSpeak(txtMsg.getText().toString());
         Thread feedbacker = new Thread(new Runnable() {
             @Override
@@ -394,6 +421,9 @@ public class RecoFragment extends Fragment implements VoiceInputListener,
                 }
             }
         });
+        if (longclick) {
+            rawFiles.clear();
+        }
         feedbacker.start();
 
     }
@@ -404,7 +434,7 @@ public class RecoFragment extends Fragment implements VoiceInputListener,
         originalSentences.clear();
         modifiedSentences.clear();
         recognitionList.clear();
-        recognitionList.add("-");
+        recognitionList.add("-沒有想要的句子(按我自行輸入吧！！！)-");
         ad2.notifyDataSetChanged();
     }
 }
