@@ -166,8 +166,16 @@ public class RecoFragment extends Fragment implements VoiceInputListener,
         // For ListView or Spinner
         recognitionList.clear();
         recognitionList.add("-沒有想要的句子(按我自行輸入吧！！！)-");
-        //recognitionList.add("1.畫面測試");
-
+        /*
+        recognitionList.add("1.畫面測試");
+        recognitionList.add("1.畫面測試");
+        recognitionList.add("1.畫面測試");
+        recognitionList.add("1.畫面測試");
+        recognitionList.add("1.畫面測試");
+        recognitionList.add("1.畫面測試");
+        recognitionList.add("1.畫面測試");
+        recognitionList.add("1.畫面測試");
+        */
         ad2 = new ArrayAdapter<String>(mContext, android.R.layout.simple_list_item_1, recognitionList){
             @NonNull
             @Override
@@ -177,7 +185,7 @@ public class RecoFragment extends Fragment implements VoiceInputListener,
                 TextView textview = view.findViewById(android.R.id.text1);
 
                 //Set your Font Size Here.
-                textview.setTextSize(30);
+                textview.setTextSize((float) 28.32);
                 textview.setGravity(Gravity.CENTER);
 
                 return view;
@@ -275,7 +283,10 @@ public class RecoFragment extends Fragment implements VoiceInputListener,
                 for (int i = 0; i < candidates.length(); i++) {
                     String stn = String.valueOf(i + 1) + "." + candidates.getString(i);
                     recognitionList.add(stn);
-                    btnf[i].setEnabled(true);
+                    if (i < 8) {
+                        btnf[i].setEnabled(true);
+                    }
+
                 }
                 rawFiles.clear();
                 originalSentences.clear();
@@ -433,6 +444,7 @@ public class RecoFragment extends Fragment implements VoiceInputListener,
         rawFiles.clear();
         originalSentences.clear();
         modifiedSentences.clear();
+        disableBtnf();
         recognitionList.clear();
         recognitionList.add("-沒有想要的句子(按我自行輸入吧！！！)-");
         ad2.notifyDataSetChanged();
