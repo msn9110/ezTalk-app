@@ -22,6 +22,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.Spinner;
@@ -41,7 +42,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,6 +60,7 @@ import static com.hhs.waverecorder.utils.MyFile.moveFile;
 import static com.hhs.waverecorder.utils.Utils.getTone;
 import static com.hhs.waverecorder.utils.Utils.lookTable;
 import static com.hhs.waverecorder.utils.Utils.readTables;
+import static com.hhs.waverecorder.utils.Utils.sortJSONArrayByCount;
 
 @SuppressWarnings("all")
 public class VoiceCollectFragment extends Fragment implements
@@ -101,19 +107,20 @@ public class VoiceCollectFragment extends Fragment implements
     FrameLayout volView;
     Spinner spMyLabel, spTone;
     MyText txtWord;
-    CheckBox chkUpload;
+    CheckBox chkUpload, chkSeq;
     TextView tvRecNOW, tvCorrect, tvTotal, tvPath, tvRes;
     VolumeCircle circle = null;
 
     //Global Data
-    JSONObject czTable/*chineseToZhuyin*/;
+    JSONObject czTable/*chineseToZhuyin*/, zcTable;
+    ArrayList<String> keys = new ArrayList<>();
     int width, height, dpi; // device resolution in pixels used for UI
 
     //Global Variable
     Deque<String> recordedPath = new LinkedList<>();
     String label = "";
     String tone = "";
-    int correct = 0, total = 0;
+    int correct = 0, total = 0, seq = 0;
     WAVRecorder recorder = null;
     ArrayList<String> chosenLabels = new ArrayList<>();
 
@@ -147,6 +154,29 @@ public class VoiceCollectFragment extends Fragment implements
         tvCorrect = mView.findViewById(R.id.tvCorrect);
         tvRes = mView.findViewById(R.id.tvRes);
         chkUpload = mView.findViewById(R.id.chkUpload);
+        chkSeq = mView.findViewById(R.id.chkSeq);
+        chkSeq.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                txtWord.setEnabled(!b);
+                if (chosenLabels.size() > 0) {
+                    if (!chosenLabels.get(0).contentEquals("-")) {
+                        String current = chosenLabels.get(0).replaceAll("[˙ˊˇˋ_]", "");
+                        try {
+                            seq = keys.indexOf(current);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                }
+                if (b) {
+                    seq_next();
+                } else {
+
+                }
+            }
+        });
 
         txtWord.setOnCursorChangedListener(this);
         txtWord.addTextChangedListener(textWatcher);
@@ -170,8 +200,19 @@ public class VoiceCollectFragment extends Fragment implements
         mContext = getActivity();
         eventReceiver.setOnListener(this);
         try {
-            czTable = readTables(mContext).getJSONObject("czTable");
+            JSONObject tables = readTables(mContext);
+            czTable = tables.getJSONObject("czTable");
+            zcTable = tables.getJSONObject("zcTable");
+            InputStream is = mContext.getAssets().open("keys.txt");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                keys.add(line);
+            }
+            reader.close();
         } catch (JSONException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -265,7 +306,13 @@ public class VoiceCollectFragment extends Fragment implements
                 break;
 
             case R.id.btnMoveCursor:
-                txtWord.setSelection((txtWord.getSelectionEnd() + 1) % (txtWord.length() + 1));
+                if (chkSeq.isChecked()) {
+                    seq = (seq + 1) % keys.size();
+                    seq_next();
+                } else {
+                    txtWord.setSelection((txtWord.getSelectionEnd() + 1) % (txtWord.length() + 1));
+                }
+
                 break;
         }
     }
@@ -485,6 +532,31 @@ public class VoiceCollectFragment extends Fragment implements
                 if (tvPath.getText().toString().contentEquals(filepath))
                     tvPath.setText(newPath);
             }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void seq_next() {
+        String zhuyin = keys.get(seq);
+        try {
+            JSONArray array = zcTable.getJSONArray(zhuyin);
+            String word = sortJSONArrayByCount(array, false)
+                    .getJSONObject(0)
+                    .keys()
+                    .next();
+            txtWord.setText(word);
+            txtWord.setSelection(1);
+            int idx = 0;
+            for (int i = 0; i < spMyLabel.getAdapter().getCount(); i++) {
+                String label = (String) spMyLabel.getAdapter().getItem(i);
+                if (label.startsWith(zhuyin)) {
+                    idx = i;
+                    break;
+                }
+            }
+            spMyLabel.setSelection(idx, true);
+
         } catch (JSONException e) {
             e.printStackTrace();
         }
