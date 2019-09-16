@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Locale;
 
@@ -118,9 +119,10 @@ public class VoiceCollectFragment extends Fragment implements
 
     //Global Variable
     Deque<String> recordedPath = new LinkedList<>();
+    Deque<Integer> corrects = new LinkedList<>();
     String label = "";
     String tone = "";
-    int correct = 0, total = 0, seq = 0;
+    int total = 0, seq = 0;
     WAVRecorder recorder = null;
     ArrayList<String> chosenLabels = new ArrayList<>();
 
@@ -293,6 +295,15 @@ public class VoiceCollectFragment extends Fragment implements
             case R.id.btnDel:
                 if (recordedPath.size() > 0) {
                     String recorded = recordedPath.removeFirst();
+                    if (recorded.contains("upload")) {
+                        corrects.removeFirst();
+                        int correct = 0;
+                        for (Iterator it = corrects.iterator();it.hasNext();)
+                            correct += (Integer) it.next();
+                        tvCorrect.setText("Accuracy : " + correct + " / " + corrects.size());
+
+                    }
+
                     RemoteDelete remoteDelete = new RemoteDelete(recorded);
                     remoteDelete.executeRemoteDelete();
                     File file = new File(recorded);
@@ -394,9 +405,10 @@ public class VoiceCollectFragment extends Fragment implements
                 spMyLabel.setAdapter(ad);
                 spMyLabel.setSelection(selection, true);
                 recordedPath.clear();
+                corrects.clear();
                 tvPath.setText("");
                 total = 0;
-                correct = 0;
+                tvRes.setText("");
                 tvCorrect.setText("");
                 tvTotal.setText("已錄 : " + total);
                 break;
@@ -476,14 +488,18 @@ public class VoiceCollectFragment extends Fragment implements
                 JSONArray lists = response.getJSONArray("result_lists");
                 if (numOfWord == 1) {
                     int pos = -1;
+                    boolean is_put = false;
                     JSONArray jsonArray = lists.getJSONArray(0);
                     for (int i = 0; i < jsonArray.length(); i++) {
                         myResult += jsonArray.getString(i) + ",";
                         if (correctLabel.contentEquals(jsonArray.getString(i))) {
                             pos = i + 1;
-                            correct++;
+                            corrects.addFirst(1);
+                            is_put = true;
                         }
                     }
+                    if (! is_put)
+                        corrects.addFirst(0);
                     myResult = "(" + pos + "/" + jsonArray.length() + ")\n" + myResult;
                 } else {
                     for (int i = 0; i < numOfWord; i++) {
@@ -502,12 +518,17 @@ public class VoiceCollectFragment extends Fragment implements
                     String sentence = response.getString("sentence");
                     myResult += "\n" + sentence;
                     if (correctLabel.contentEquals(sentence))
-                        correct++;
+                        corrects.addFirst(1);
+                    else
+                        corrects.addFirst(0);
                 }
 
                 myResult = myResult.replaceAll(",$", "");
                 tvRes.setText(myResult);
-                tvCorrect.setText("Accuracy : " + correct + " / " + total);
+                int correct = 0;
+                for (Iterator it = corrects.iterator();it.hasNext();)
+                    correct += (Integer) it.next();
+                tvCorrect.setText("Accuracy : " + correct + " / " + corrects.size());
 
             } else {
                 flag = true;
@@ -516,8 +537,7 @@ public class VoiceCollectFragment extends Fragment implements
                 recordedPath.removeFirst();
                 String recorded = recordedPath.peekFirst();
                 tvPath.setText(recorded);
-                total--;
-                tvTotal.setText("已錄 : " + total);
+                tvTotal.setText("已錄 : " + recordedPath.size());
             }
 
             String root = Environment.getExternalStoragePublicDirectory("MyRecorder")

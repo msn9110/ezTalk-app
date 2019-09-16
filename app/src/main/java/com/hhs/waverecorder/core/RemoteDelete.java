@@ -25,8 +25,7 @@ public class RemoteDelete {
     
     public void executeRemoteDelete() {
         final String filename = mFile.getName();
-        if (mFile.getAbsolutePath().replaceAll("upload", "").length() <
-                mFile.getAbsolutePath().length()){
+        if (mFile.getAbsolutePath().contains("upload")){
             Thread worker = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -37,8 +36,16 @@ public class RemoteDelete {
                     try {
                         data.put("filename", name);
                         data.put("label", label);
-                        String url = "http://120.126.145.113:5000/remove";
+                        String url = "http://120.126.151.155:5000/remove";
 
+                        StringEntity s = new StringEntity(data.toString(), "UTF-8");
+                        HttpClient httpClient = new DefaultHttpClient();
+                        HttpPut httpPut = new HttpPut(url);
+                        httpPut.setHeader("Accept", "application/json");
+                        httpPut.setHeader("Content-type", "application/json");
+                        httpPut.setEntity(s);
+                        httpClient.execute(httpPut);
+                        /*
                         URL u = new URL(url);
                         conn = (HttpURLConnection) u.openConnection();
                         conn.setRequestMethod("PUT");
@@ -53,6 +60,7 @@ public class RemoteDelete {
                         writer.writeBytes(data.toString());
                         os.flush();
                         os.close();
+                        */
                     } catch (JSONException e) {
                         e.printStackTrace();
                     } catch (UnsupportedEncodingException e) {

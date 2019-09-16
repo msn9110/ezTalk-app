@@ -44,7 +44,7 @@ public class Updater extends Thread {
     @Override
     public void run() {
         super.run();
-        String host = "120.126.145.113";
+        String host = "120.126.151.155";
         String port = ":5000";
         String apiName = "/updates";
         String url = "http://" + host + port + apiName;

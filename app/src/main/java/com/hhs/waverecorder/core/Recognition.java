@@ -57,7 +57,7 @@ public class Recognition extends Thread {
         super.run();
         String label = mFile.getParentFile().getName();
         String result = "辨識完成";
-        String host = "120.126.145.113";
+        String host = "120.126.151.155";
         String port = ":5000";
         String apiName = "/recognize";
         String url = "http://" + host + port + apiName;

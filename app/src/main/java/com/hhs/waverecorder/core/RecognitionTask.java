@@ -66,7 +66,7 @@ public class RecognitionTask extends AsyncTask<File, Void, String> {
     @Override
     protected String doInBackground(File... files) {
         String result = "辨識完成";
-        String host = "120.126.145.113";
+        String host = "120.126.151.155";
         String port = ":5000";
         String apiName = "/recognize";
         String url = "http://" + host + port + apiName;
