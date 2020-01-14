@@ -13,7 +13,6 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -115,7 +114,6 @@ public class VoiceCollectFragment extends Fragment implements
     //Global Data
     JSONObject czTable/*chineseToZhuyin*/, zcTable;
     ArrayList<String> keys = new ArrayList<>();
-    int width, height, dpi; // device resolution in pixels used for UI
 
     //Global Variable
     Deque<String> recordedPath = new LinkedList<>();
@@ -130,13 +128,6 @@ public class VoiceCollectFragment extends Fragment implements
     boolean isSentence = false;
 
     private void initUI() {
-        // get resolution
-        DisplayMetrics dm = new DisplayMetrics();
-        getActivity().getWindowManager().getDefaultDisplay().getMetrics(dm);
-        width = dm.widthPixels;
-        height = dm.heightPixels;
-        dpi = dm.densityDpi;
-
         // loading page
         loadingPage = new ProgressDialog(mContext);
         loadingPage.setProgressStyle(ProgressDialog.STYLE_SPINNER);
@@ -283,7 +274,7 @@ public class VoiceCollectFragment extends Fragment implements
                 }
                 if (recorder == null && toRec) {
                     recorder = new WAVRecorder(mContext, path, duration, mUIHandler);
-                    circle = new VolumeCircle(mContext, 0, dpi);
+                    circle = new VolumeCircle(mContext, 0);
                     volView.addView(circle);
                     Log.d(TAG, "Start Recording");
                     recorder.startRecording();

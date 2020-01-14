@@ -14,7 +14,6 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -122,7 +121,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
     //Global Data
     JSONObject zcTable, czTable/*chineseToZhuyin*/;
-    int width, height, dpi; // device resolution in pixels used for UI
 
     //Global Variable
     WAVRecorder recorder = null;
@@ -138,14 +136,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     private boolean modifiedByKeyboard = false;
 
     private void initUI() {
-
-        // get resolution
-        DisplayMetrics dm = new DisplayMetrics();
-        getActivity().getWindowManager().getDefaultDisplay().getMetrics(dm);
-        width = dm.widthPixels;
-        height = dm.heightPixels;
-        dpi = dm.densityDpi;
-
         volView = mView.findViewById(R.id.volume);
         tvRecNOW = mView.findViewById(R.id.tvRecNOW);
 
@@ -756,7 +746,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 String path = "MyRecorder/tmp/" + df.format(new Date()) + ".wav";
                 if (recorder == null) {
                     recorder = new WAVRecorder(mContext, path, -1, mUIHandler);
-                    circle = new VolumeCircle(mContext, 0, dpi);
+                    circle = new VolumeCircle(mContext, 0);
                     volView.addView(circle);
                     Log.d(TAG, "Start Recording");
                     recorder.startRecording(); // ###STEP 1-1###

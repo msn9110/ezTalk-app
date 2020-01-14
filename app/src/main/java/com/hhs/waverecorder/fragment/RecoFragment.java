@@ -10,7 +10,6 @@ import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -22,7 +21,6 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ListView;
-import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.example.hhs.wavrecorder.R;
@@ -98,21 +96,12 @@ public class RecoFragment extends Fragment implements VoiceInputListener,
     ArrayList<String> modifiedSentences = new ArrayList<>();
     ArrayAdapter<String> ad2;
 
-    int width, height, dpi; // device resolution in pixels used for UI
-
     //Global Variable
     WAVRecorder recorder = null;
     Speaker speaker;
     RecognitionTask recognize = null;
 
     private void initUI() {
-        // get resolution
-        DisplayMetrics dm = new DisplayMetrics();
-        getActivity().getWindowManager().getDefaultDisplay().getMetrics(dm);
-        width = dm.widthPixels;
-        height = dm.heightPixels;
-        dpi = dm.densityDpi;
-
         volView = mView.findViewById(R.id.volume);
         tvRecNOW = mView.findViewById(R.id.tvRecNOW);
 
@@ -313,7 +302,7 @@ public class RecoFragment extends Fragment implements VoiceInputListener,
                     SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault());
                     String path = "MyRecorder/tmp/" + df.format(new Date()) + ".wav";
                     recorder = new WAVRecorder(mContext, path, -1, mUIHandler);
-                    circle = new VolumeCircle(mContext, 0, dpi);
+                    circle = new VolumeCircle(mContext, 0);
                     volView.addView(circle);
                     Log.d(TAG, "Start Recording");
                     recorder.startRecording(); // ###STEP 1-1###
