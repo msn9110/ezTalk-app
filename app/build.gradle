@@ -45,5 +45,5 @@ dependencies {
     implementation 'com.android.support:design:28.0.0'
     implementation 'jackmego.com.jieba_android:jieba_android-release:0.1.0'
     implementation files('libs/libandroid_tensorflow_inference_java.jar')
-//    implementation files('libs/wavetools.jar')
+    implementation files('libs/wavetools.jar')
 }
