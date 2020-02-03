@@ -28,7 +28,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.example.hhs.wavrecorder.R;
-import com.hhs.waverecorder.core.Recognition;
+import com.hhs.waverecorder.core.RecognitionTask;
 import com.hhs.waverecorder.core.RemoteDelete;
 import com.hhs.waverecorder.core.WAVRecorder;
 import com.hhs.waverecorder.listener.OnCursorChangedListener;
@@ -249,14 +249,14 @@ public class VoiceCollectFragment extends Fragment implements
         switch (view.getId()) {
             case R.id.btnRec:
                 SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault());
-                String path = "MyRecorder/";
+                String path = "MyRecorder/local/";
                 int duration = -1;
                 boolean toRec = false;
                 if (!isSentence) {
                     duration = 2500;
                     toRec = label.length() > 0;
-                    path += "withTone/" + label.replaceAll("[˙_ˊˇˋ]", "")
-                            + "˙_ˊˇˋ".charAt(Integer.parseInt(tone)) + "/";
+                    path += "zhuyin/" + label.replaceAll("[˙_ˊˇˋ]", "")
+                            /*+ "˙_ˊˇˋ".charAt(Integer.parseInt(tone))*/ + "/";
                 } else {
                     String origin_msg = txtWord.getText().toString();
                     String dir = origin_msg.replaceAll("[^\u4e00-\u9fa6]+", "-");
@@ -339,11 +339,10 @@ public class VoiceCollectFragment extends Fragment implements
                     String ch = addedText.substring(i - start, i - start + 1);
                     // avoid no mapping in czTable
                     chosenLabels.add(i, "-");
-                    int selection = 0;
                     try {
                         ArrayList<String> candidate = lookTable(czTable, ch, "pronounces");
                         if (candidate.size() > 0) {
-                            String myLabel = candidate.get(0);
+                            String myLabel = candidate.get(0).replaceAll("[˙ˊˇˋ]", "");
                             chosenLabels.set(i, myLabel);
                         }
                     } catch (JSONException e) {
@@ -378,7 +377,7 @@ public class VoiceCollectFragment extends Fragment implements
                     try {
                         ArrayList<String> pronounces = lookTable(czTable, ch, "pronounces");
                         for (String p:pronounces) {
-                            String label = p;
+                            String label = p.replaceAll("[˙ˊˇˋ]", "");
                             if (!labels.contains(label)) {
                                 labels.add(label);
                             }
@@ -457,7 +456,8 @@ public class VoiceCollectFragment extends Fragment implements
                     e.printStackTrace();
                     extra = null;
                 } finally {
-                    new Recognition(mContext, path, mUIHandler, extra).start();
+                    RecognitionTask task = new RecognitionTask(mContext);
+                    task.execute(new File(path));
                 }
             }
         }
@@ -535,7 +535,7 @@ public class VoiceCollectFragment extends Fragment implements
                     .getAbsolutePath();
             if (!flag && uploaded) {
                 recordedPath.removeFirst();
-                String relativePath = file.getAbsolutePath().replaceFirst(root + "/", "");
+                String relativePath = file.getAbsolutePath().replaceFirst(root + "/local/", "");
                 String newPath = root + "/uploaded/" + relativePath;
                 recordedPath.addFirst(newPath);
                 moveFile(filepath, newPath);

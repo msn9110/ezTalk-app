@@ -57,7 +57,6 @@ public class FTPManager extends AsyncTask<Void, Void, String> {
                 ftpClient.storeFile(mFile.getName(), inputStream);
                 inputStream.close();
 
-                //new Recognition(mContext, mFile.getName(), remoteDir, mHandler).start();
             }
         } catch (Exception ex) {
             result = "連線異常";

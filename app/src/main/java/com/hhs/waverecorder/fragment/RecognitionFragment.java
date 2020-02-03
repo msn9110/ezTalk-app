@@ -32,14 +32,13 @@ import android.widget.TextView;
 import com.example.hhs.wavrecorder.R;
 import com.hhs.waverecorder.adapter.RadioItemViewAdapter;
 import com.hhs.waverecorder.adapter.ViewHolder;
-import com.hhs.waverecorder.core.Recognition;
+import com.hhs.waverecorder.core.RecognitionTask;
 import com.hhs.waverecorder.core.Speaker;
 import com.hhs.waverecorder.core.Updater;
 import com.hhs.waverecorder.core.WAVRecorder;
 import com.hhs.waverecorder.listener.OnCursorChangedListener;
 import com.hhs.waverecorder.listener.VoiceInputListener;
 import com.hhs.waverecorder.receiver.VoiceInputEventReceiver;
-import com.hhs.waverecorder.utils.MyFile;
 import com.hhs.waverecorder.widget.VolumeCircle;
 import com.hhs.waverecorder.widget.MyText;
 
@@ -107,7 +106,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
     FrameLayout volView;
     VolumeCircle circle = null;
     TextView tvRecNOW;
-    ProgressDialog loadingPage = null;
     ArrayList<String> recognitionList = new ArrayList<>(); // to store recognition zhuyin without tone
     ArrayList<String> wordsList = new ArrayList<>(); // to show all possible chinese word according to selected no tone zhuyin
     ArrayList<String> displayLabelList = new ArrayList<>(); // to show all zhuyin with tone of the first chinese word behind cursor
@@ -798,23 +796,8 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
         isVoiceInput = true;
         if (new File(path).exists()) {
 
-            final Recognition recognition =
-                    new Recognition(mContext, path, mUIHandler, null);
-            recognition.start(); // ###STEP 2-1###
-            // loading page
-            loadingPage = new ProgressDialog(mContext);
-            loadingPage.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-            loadingPage.setTitle("辨識中");
-            loadingPage.setMessage("請稍候");
-            loadingPage.setCanceledOnTouchOutside(false);
-            loadingPage.setCancelable(false);
-            loadingPage.setOnCancelListener(new DialogInterface.OnCancelListener() {
-                @Override
-                public void onCancel(DialogInterface dialogInterface) {
-
-                }
-            });
-            loadingPage.show();
+            RecognitionTask task = new RecognitionTask(mContext);
+            task.execute(new File(path));
         }
     }
 
@@ -891,9 +874,6 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
 
         } catch (JSONException e) {
             e.printStackTrace();
-        } finally {
-            loadingPage.dismiss();
-            loadingPage = null;
         }
     }
 

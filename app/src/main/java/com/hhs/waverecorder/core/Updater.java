@@ -4,15 +4,9 @@ package com.hhs.waverecorder.core;
 import android.content.Context;
 import android.media.MediaScannerConnection;
 
+import com.hhs.waverecorder.Settings;
 import com.hhs.waverecorder.utils.MyFile;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -25,7 +19,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 
-import static com.hhs.waverecorder.core.Recognition.getJSONString;
+import static com.hhs.waverecorder.utils.Utils.getJSONString;
 
 @SuppressWarnings("all")
 public class Updater extends Thread {
@@ -44,10 +38,8 @@ public class Updater extends Thread {
     @Override
     public void run() {
         super.run();
-        String host = "120.126.151.155";
-        String port = ":5000";
         String apiName = "/updates";
-        String url = "http://" + host + port + apiName;
+        String url = Settings.URL + apiName;
         HttpURLConnection conn = null;
 
         try {
@@ -56,7 +48,7 @@ public class Updater extends Thread {
                 extraData += ", \"extraData\":" + extra.toString() + "}";
             }
             String data = mUpdateData.toString();//.replaceFirst("}$", "") + extraData;
-/*
+
             URL u = new URL(url);
             conn = (HttpURLConnection) u.openConnection();
             conn.setRequestMethod("PUT");
@@ -68,23 +60,11 @@ public class Updater extends Thread {
 
             OutputStream os = conn.getOutputStream();
             DataOutputStream writer = new DataOutputStream(os);
-            writer.writeBytes(data);
+            writer.write(data.getBytes("UTF-8"));
             os.flush();
             os.close();
 
             String myResult = getJSONString(conn.getInputStream());
-
-            */
-            StringEntity entity = new StringEntity(data, "UTF-8");
-            HttpClient httpClient = new DefaultHttpClient();
-            HttpPut httpPut = new HttpPut(url);
-            httpPut.setHeader("Accept", "application/json");
-            httpPut.setHeader("Content-type", "application/json");
-            httpPut.setEntity(entity);
-            HttpResponse httpResponse = httpClient.execute(httpPut);
-            HttpEntity httpEntity = httpResponse.getEntity();
-
-            String myResult = getJSONString(httpEntity.getContent());
 
             JSONObject response = new JSONObject(myResult);
             boolean success = response.getBoolean("success");
@@ -105,8 +85,6 @@ public class Updater extends Thread {
                 }
             }
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        } catch (ClientProtocolException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();

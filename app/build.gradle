@@ -1,6 +1,6 @@
 apply plugin: 'com.android.application'
 
-    android {
+android {
     compileSdkVersion 28
     buildToolsVersion "28.0.1"
 
@@ -30,7 +30,6 @@ apply plugin: 'com.android.application'
             jniLibs.srcDirs = ['libs']
         }
     }
-        useLibrary 'org.apache.http.legacy'
 }
 
 dependencies {

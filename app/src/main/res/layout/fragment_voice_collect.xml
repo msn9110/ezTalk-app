@@ -4,23 +4,28 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <LinearLayout
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:layout_margin="20dp">
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:layout_margin="20dp">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:layout_marginEnd="5dp">
                 <com.hhs.waverecorder.widget.MyText
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
+                    android:layout_weight="1.5"
                     android:id="@+id/txtMsg"
                     android:textAlignment="center"
                     android:textSize="50sp"
-                    android:layout_margin="20dp"
+                    android:layout_margin="10dp"
                     android:layout_gravity="center"
                     tools:text="我"
                     />
@@ -28,7 +33,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_weight="8"
-                    android:layout_margin="20dp"
+                    android:layout_margin="10dp"
                     android:text=">"
                     android:textSize="30sp"
                     android:id="@+id/btnMoveCursor"/>
@@ -66,7 +71,8 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:layout_weight="3"
-                    android:layout_margin="10dp">
+                    android:layout_margin="10dp"
+                    android:visibility="gone">
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -82,77 +88,89 @@
                     </Spinner>
                 </LinearLayout>
 
-        </LinearLayout>
+            </LinearLayout>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <CheckBox
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="上傳檔案"
-                android:textSize="25sp"
-                android:id="@+id/chkUpload"/>
-            <CheckBox
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="5dp"
-                android:layout_marginLeft="5dp"
-                android:text="循序蒐集"
-                android:id="@+id/chkSeq"
-                android:textSize="25sp"/>
-
-        </LinearLayout>
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/tvRes"
-            android:textSize="30sp"
-            tools:text="辨識結果："
-            android:layout_margin="10dp"/>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_margin="5dp">
-
-            <TextView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:layout_weight="1"
-                android:textSize="30sp"
-                android:id="@+id/tvCorrect"
-                tools:text="答對"/>
+                android:orientation="horizontal">
 
-            <TextView
+                <CheckBox
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="上傳檔案"
+                    android:textSize="25sp"
+                    android:id="@+id/chkUpload"/>
+                <CheckBox
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginLeft="5dp"
+                    android:text="循序蒐集"
+                    android:id="@+id/chkSeq"
+                    android:textSize="25sp"/>
+
+            </LinearLayout>
+            <ScrollView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:layout_weight="1"
-                android:textSize="30sp"
-                android:id="@+id/tvTotal"
-                tools:text="已錄檔案數量"/>
+                android:layout_height="wrap_content">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/tvRes"
+                        android:textSize="30sp"
+                        tools:text="辨識結果："
+                        android:layout_margin="10dp"/>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_margin="5dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="5dp"
+                            android:layout_weight="1"
+                            android:textSize="30sp"
+                            android:id="@+id/tvCorrect"
+                            tools:text="答對"/>
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="5dp"
+                            android:layout_weight="1"
+                            android:textSize="30sp"
+                            android:id="@+id/tvTotal"
+                            tools:text="已錄檔案數量"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/tvPath"
+                        android:textSize="15sp"
+                        tools:text="/path"
+                        android:layout_margin="5dp"/>
+                    <Button
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="20dp"
+                        android:text="刪除前一個錄音"
+                        android:textSize="40sp"
+                        android:id="@+id/btnDel"/>
+                </LinearLayout>
+            </ScrollView>
+
+
         </LinearLayout>
+    </FrameLayout>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/tvPath"
-            android:textSize="15sp"
-            tools:text="/path"
-            android:layout_margin="5dp"/>
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="20dp"
-            android:text="刪除前一個錄音"
-            android:textSize="40sp"
-            android:id="@+id/btnDel"/>
-
-    </LinearLayout>
     <include layout="@layout/recbutton" />
 </FrameLayout>

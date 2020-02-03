@@ -5,32 +5,31 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
-import android.support.v7.app.AlertDialog;
 import android.widget.Toast;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
+import com.hhs.waverecorder.Settings;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Arrays;
 
 import static com.hhs.waverecorder.AppValue.RECOGNITION_FINISHED_ACTION;
-import static com.hhs.waverecorder.core.Recognition.getJSONString;
+import static com.hhs.waverecorder.utils.Utils.getJSONString;
 
 public class RecognitionTask extends AsyncTask<File, Void, String> {
 
     private Context mContext;
     private ProgressDialog recognitionDialog;
-    private HttpPost httpPost = null;
+    private HttpURLConnection conn = null;
     private long start = 0;
 
     public RecognitionTask(Context context) {
@@ -43,8 +42,8 @@ public class RecognitionTask extends AsyncTask<File, Void, String> {
         recognitionDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
             public void onDismiss(DialogInterface dialogInterface) {
-                if (httpPost != null) {
-                    httpPost.abort();
+                if (conn != null) {
+                    conn.disconnect();
                 }
             }
         });
@@ -66,10 +65,8 @@ public class RecognitionTask extends AsyncTask<File, Void, String> {
     @Override
     protected String doInBackground(File... files) {
         String result = "辨識完成";
-        String host = "120.126.151.155";
-        String port = ":5000";
         String apiName = "/recognize";
-        String url = "http://" + host + port + apiName;
+        String url = Settings.URL + apiName;
         if (files.length == 1) {
             for (File mFile: files) {
                 String label = mFile.getParentFile().getName();
@@ -87,18 +84,26 @@ public class RecognitionTask extends AsyncTask<File, Void, String> {
                             + "\"filename\":\"" + mFile.getName() + "\", \"raw\":"
                             + rawData.getJSONArray(0).toString() + "}"
                             + extraData + "}";
-                    StringEntity s = new StringEntity(json, "UTF-8");
-                    HttpClient httpClient = new DefaultHttpClient();
-                    httpPost = new HttpPost(url);
-                    httpPost.setHeader("Accept", "application/json");
-                    httpPost.setHeader("Content-type", "application/json");
-                    httpPost.setEntity(s);
-                    HttpResponse httpResponse = httpClient.execute(httpPost);
-                    HttpEntity httpEntity = httpResponse.getEntity();
 
-                    String myResult = getJSONString(httpEntity.getContent());
+                    URL u = new URL(url);
+                    conn = (HttpURLConnection) u.openConnection();
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Content-Type","application/json; charset=UTF-8");
+                    conn.setRequestProperty("Accept", "application/json");
+                    conn.setDoInput(true);
+                    conn.setDoOutput(true);
+                    conn.setUseCaches(false);
 
-                    httpPost = null;
+                    OutputStream os = conn.getOutputStream();
+                    DataOutputStream writer = new DataOutputStream(os);
+                    writer.write(json.getBytes("UTF-8"));
+                    os.flush();
+                    os.close();
+
+                    String myResult = getJSONString(conn.getInputStream());
+
+                    conn.disconnect();
+
                     Intent intent = new Intent(RECOGNITION_FINISHED_ACTION);
                     intent.putExtra("response", myResult);
                     intent.putExtra("filepath", mFile.getAbsolutePath());
@@ -111,6 +116,8 @@ public class RecognitionTask extends AsyncTask<File, Void, String> {
                     result = "POST Error";
                 } catch (JSONException e) {
                     e.printStackTrace();
+                } finally {
+                    conn = null;
                 }
             }
             return result;

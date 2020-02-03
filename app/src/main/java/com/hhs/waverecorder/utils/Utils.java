@@ -124,6 +124,18 @@ public final class Utils {
         return item.put(key1, itemJSONArray);
     }
 
+    public static String getJSONString(InputStream is) throws IOException {
+
+        BufferedReader bufReader = new BufferedReader(new InputStreamReader(is, "utf-8"), 8);
+        StringBuilder builder = new StringBuilder();
+        String line;
+        while((line = bufReader.readLine()) != null) {
+            builder.append(line + "\n");
+        }
+        is.close();
+        return builder.toString();
+    }
+
     // store ZCTABLE CZTABLE
     public static void storeTable(JSONObject table, Context context) {
         JSONObject zcTable = null, czTable = null;
