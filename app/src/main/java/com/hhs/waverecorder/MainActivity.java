@@ -92,20 +92,33 @@ public class MainActivity extends AppCompatActivity
         };
         drawer.addDrawerListener(toggle);
         toggle.syncState();
+        if (savedInstanceState != null) {
+            currentFragment = getSupportFragmentManager().getFragment(savedInstanceState, "myfragment");
+            System.out.println(savedInstanceState.getInt("yyy", 8));
+        } else {
+            currentFragment = new RecoFragment();
+        }
     }
 
     @Override
     protected void onStart() {
         super.onStart();
         Log.i(TAG, "onStart");
-        if (currentFragment == null)
-            replaceFragment(new RecoFragment());
+        replaceFragment(currentFragment);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         Log.i(TAG, "onResume");
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        getSupportFragmentManager().putFragment(outState, "myfragment", currentFragment);
+        outState.putInt("yyy", 666);
+        System.out.println("SAVE");
+        super.onSaveInstanceState(outState);
     }
 
     private void requestPermission() {
@@ -143,7 +156,13 @@ public class MainActivity extends AppCompatActivity
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
-            super.onBackPressed();
+            int count = getFragmentManager().getBackStackEntryCount();
+
+            if (count == 0) {
+                this.finish();
+            } else {
+                getFragmentManager().popBackStack();
+            }
         }
     }
 

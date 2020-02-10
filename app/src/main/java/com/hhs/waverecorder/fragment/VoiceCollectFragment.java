@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
@@ -187,6 +188,20 @@ public class VoiceCollectFragment extends Fragment implements
     }
 
     @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        if (savedInstanceState != null) {
+            seq = savedInstanceState.getInt("seq", 0);
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt("seq", seq);
+    }
+
+    @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate : " + Thread.currentThread().getId());
@@ -302,6 +317,9 @@ public class VoiceCollectFragment extends Fragment implements
                     MediaScannerConnection.scanFile(mContext, new String[]{recorded}, null, null);
                     recorded = recordedPath.peekFirst();
                     tvPath.setText(recorded);
+                }
+
+                if (total > 0) {
                     total--;
                     tvTotal.setText("已錄 : " + total);
                 }
@@ -394,9 +412,7 @@ public class VoiceCollectFragment extends Fragment implements
                 ad.setDropDownViewResource(R.layout.myspinner);
                 spMyLabel.setAdapter(ad);
                 spMyLabel.setSelection(selection, true);
-                recordedPath.clear();
                 corrects.clear();
-                tvPath.setText("");
                 total = 0;
                 tvRes.setText("");
                 tvCorrect.setText("");
@@ -527,8 +543,9 @@ public class VoiceCollectFragment extends Fragment implements
                 MediaScannerConnection.scanFile(mContext, new String[]{filepath}, null, null);
                 recordedPath.removeFirst();
                 String recorded = recordedPath.peekFirst();
+                total--;
                 tvPath.setText(recorded);
-                tvTotal.setText("已錄 : " + recordedPath.size());
+                tvTotal.setText("已錄 : " + total);
             }
 
             String root = Environment.getExternalStoragePublicDirectory("MyRecorder")
@@ -570,6 +587,8 @@ public class VoiceCollectFragment extends Fragment implements
 
         } catch (JSONException e) {
             e.printStackTrace();
+            seq = (seq + 1) % keys.size();
+            seq_next();
         }
     }
 }
