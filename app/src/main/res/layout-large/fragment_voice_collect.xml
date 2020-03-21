@@ -24,8 +24,8 @@
                     android:layout_weight="1.5"
                     android:id="@+id/txtMsg"
                     android:textAlignment="center"
-                    android:textSize="50sp"
-                    android:layout_margin="10dp"
+                    android:textSize="25sp"
+                    android:layout_margin="2dp"
                     android:layout_gravity="center"
                     tools:text="我"
                     />
@@ -33,9 +33,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_weight="8"
-                    android:layout_margin="10dp"
+                    android:layout_margin="2dp"
                     android:text=">"
-                    android:textSize="30sp"
+                    android:textSize="15sp"
                     android:id="@+id/btnMoveCursor"/>
             </LinearLayout>
 
@@ -55,12 +55,12 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Label:"
-                        android:textSize="35sp"
+                        android:textSize="25sp"
                         android:layout_marginTop="10dp"
                         android:layout_marginBottom="5dp"/>
                     <Spinner
                         android:layout_width="match_parent"
-                        android:layout_height="75dp"
+                        android:layout_height="35dp"
                         android:id="@+id/spMyLabel">
 
                     </Spinner>
@@ -99,8 +99,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="上傳檔案"
-                    android:textSize="25sp"
-                    android:visibility="visible"
+                    android:textSize="20sp"
+                    android:visibility="gone"
                     android:id="@+id/chkUpload"/>
                 <CheckBox
                     android:layout_width="wrap_content"
@@ -109,7 +109,7 @@
                     android:layout_marginLeft="5dp"
                     android:text="循序蒐集"
                     android:id="@+id/chkSeq"
-                    android:textSize="25sp"/>
+                    android:textSize="20sp"/>
 
             </LinearLayout>
             <ScrollView
@@ -123,22 +123,22 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:id="@+id/tvRes"
-                        android:textSize="30sp"
+                        android:textSize="20sp"
                         tools:text="辨識結果："
-                        android:layout_margin="10dp"/>
+                        android:layout_margin="2dp"/>
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:layout_margin="5dp">
+                        android:layout_margin="2dp">
 
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_margin="5dp"
+                            android:layout_margin="2dp"
                             android:layout_weight="1"
-                            android:textSize="30sp"
+                            android:textSize="20sp"
                             android:id="@+id/tvCorrect"
                             tools:text="答對"/>
 
@@ -147,7 +147,7 @@
                             android:layout_height="wrap_content"
                             android:layout_margin="5dp"
                             android:layout_weight="1"
-                            android:textSize="30sp"
+                            android:textSize="20sp"
                             android:id="@+id/tvTotal"
                             tools:text="已錄檔案數量"/>
                     </LinearLayout>
@@ -156,15 +156,15 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:id="@+id/tvPath"
-                        android:textSize="15sp"
+                        android:textSize="10sp"
                         tools:text="/path"
-                        android:layout_margin="5dp"/>
+                        android:layout_margin="2dp"/>
                     <Button
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_margin="20dp"
+                        android:layout_margin="3dp"
                         android:text="刪除前一個錄音"
-                        android:textSize="40sp"
+                        android:textSize="20sp"
                         android:id="@+id/btnDel"/>
                 </LinearLayout>
             </ScrollView>

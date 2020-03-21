@@ -100,7 +100,6 @@
                     android:layout_height="wrap_content"
                     android:text="上傳檔案"
                     android:textSize="25sp"
-                    android:visibility="visible"
                     android:id="@+id/chkUpload"/>
                 <CheckBox
                     android:layout_width="wrap_content"

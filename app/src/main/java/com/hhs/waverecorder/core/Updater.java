@@ -19,6 +19,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 
+import static com.hhs.waverecorder.Settings.hashed_password;
+import static com.hhs.waverecorder.Settings.user_id;
 import static com.hhs.waverecorder.utils.Utils.getJSONString;
 
 @SuppressWarnings("all")
@@ -47,7 +49,14 @@ public class Updater extends Thread {
             if (extra != null) {
                 extraData += ", \"extraData\":" + extra.toString() + "}";
             }
+            String account = ", \"account\":{\"user_id\":"
+                    + "\"" + user_id + "\", \"password\":"
+                    + "\"" + hashed_password + "\", \"sign_up\":"
+                    + "true}";
             String data = mUpdateData.toString();//.replaceFirst("}$", "") + extraData;
+            String json = data.toString().replaceFirst("\\}\\s*$", "")
+                    + account + "}";
+            System.out.println(json);
 
             URL u = new URL(url);
             conn = (HttpURLConnection) u.openConnection();
@@ -60,7 +69,7 @@ public class Updater extends Thread {
 
             OutputStream os = conn.getOutputStream();
             DataOutputStream writer = new DataOutputStream(os);
-            writer.write(data.getBytes("UTF-8"));
+            writer.write(json.getBytes("UTF-8"));
             os.flush();
             os.close();
 

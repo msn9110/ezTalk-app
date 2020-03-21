@@ -1,9 +1,8 @@
 package com.hhs.waverecorder.core;
 
-import org.tensorflow.contrib.android.TensorFlowInferenceInterface;
+import org.tensorflow.lite.Interpreter;
 
 public class AcousticModel {
-    private TensorFlowInferenceInterface top, mid, bot, syllable;
 
     public AcousticModel() {
     }

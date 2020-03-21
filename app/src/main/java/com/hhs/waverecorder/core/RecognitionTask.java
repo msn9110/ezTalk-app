@@ -23,6 +23,8 @@ import java.net.URL;
 import java.util.Arrays;
 
 import static com.hhs.waverecorder.AppValue.RECOGNITION_FINISHED_ACTION;
+import static com.hhs.waverecorder.Settings.hashed_password;
+import static com.hhs.waverecorder.Settings.user_id;
 import static com.hhs.waverecorder.utils.Utils.getJSONString;
 
 public class RecognitionTask extends AsyncTask<File, Void, String> {
@@ -78,12 +80,14 @@ public class RecognitionTask extends AsyncTask<File, Void, String> {
                     for (int i = 0; i < raws.length; i++)
                         raw[i] = 0xff & raws[i];
                     JSONArray rawData = new JSONArray(Arrays.asList(raw));
-                    String extraData = "";
-                    String json = "{\"data\":{\"label\":\"" + label + "\","
+                    String account = ", \"account\":{\"user_id\":"
+                            + "\"" + user_id + "\", \"password\":"
+                            + "\"" + hashed_password + "\", \"sign_up\":"
+                            + "true}";
+                    String json = "{\"label\":\"" + label + "\","
                             + "\"num_of_stn\": 8,"
                             + "\"filename\":\"" + mFile.getName() + "\", \"raw\":"
-                            + rawData.getJSONArray(0).toString() + "}"
-                            + extraData + "}";
+                            + rawData.getJSONArray(0).toString() + account + "}";
 
                     URL u = new URL(url);
                     conn = (HttpURLConnection) u.openConnection();

@@ -5,7 +5,7 @@ android {
     buildToolsVersion "28.0.1"
 
     defaultConfig {
-        applicationId "com.hhs.wavrecorder.dev"
+        applicationId "com.hhs.wavrecorder.dev2"
         minSdkVersion 17
         targetSdkVersion 28
         versionCode 1
@@ -14,7 +14,7 @@ android {
 
         multiDexEnabled true
         ndk {
-            abiFilters "armeabi-v7a"
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
         }
     }
     buildTypes {
@@ -24,12 +24,7 @@ android {
         }
     }
 
-    sourceSets {
-        main {
-            jni.srcDirs = []
-            jniLibs.srcDirs = ['libs']
-        }
-    }
+
 }
 
 dependencies {
@@ -43,6 +38,6 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     implementation 'com.android.support:design:28.0.0'
     implementation 'jackmego.com.jieba_android:jieba_android-release:0.1.0'
-    implementation files('libs/libandroid_tensorflow_inference_java.jar')
+    implementation 'org.tensorflow:tensorflow-lite:0.0.0-nightly'
     implementation files('libs/wavetools.jar')
 }

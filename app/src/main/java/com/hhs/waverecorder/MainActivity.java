@@ -92,6 +92,7 @@ public class MainActivity extends AppCompatActivity
         };
         drawer.addDrawerListener(toggle);
         toggle.syncState();
+
         if (savedInstanceState != null) {
             currentFragment = getSupportFragmentManager().getFragment(savedInstanceState, "myfragment");
             System.out.println(savedInstanceState.getInt("yyy", 8));
