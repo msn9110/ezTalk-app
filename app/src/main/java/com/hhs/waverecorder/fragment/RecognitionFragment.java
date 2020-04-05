@@ -54,6 +54,7 @@ import java.util.Locale;
 
 import static com.hhs.waverecorder.AppValue.*;
 import static com.hhs.waverecorder.MainActivity.showSoftKeyboard;
+import static com.hhs.waverecorder.Settings.user_id;
 import static com.hhs.waverecorder.utils.Utils.*;
 
 @SuppressWarnings("all")
@@ -325,9 +326,9 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
                 item.put(mappedFilename, itemContent);
                 filesNeedToMove.put(item);
                 String originalPath = Environment.getExternalStoragePublicDirectory("MyRecorder")
-                                      + "/tmp/" + mappedFilename;
+                        + "/" + user_id + "/tmp/" + mappedFilename;
                 String newPath = Environment.getExternalStoragePublicDirectory("MyRecorder")
-                                 + "/uploaded/sentence/" + modified + "/" + mappedFilename;
+                        + "/" + user_id + "/uploaded/sentence/" + modified + "/" + mappedFilename;
                 files.add(originalPath);
                 files.add(newPath);
 
@@ -741,7 +742,7 @@ public class RecognitionFragment extends Fragment implements AdapterView.OnItemS
             case R.id.btnRec:
                 // ###STEP 1###
                 SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault());
-                String path = "MyRecorder/tmp/" + df.format(new Date()) + ".wav";
+                String path = "MyRecorder/" + user_id + "/tmp/" + df.format(new Date()) + ".wav";
                 if (recorder == null) {
                     recorder = new WAVRecorder(mContext, path, -1, mUIHandler);
                     circle = new VolumeCircle(mContext, 0);

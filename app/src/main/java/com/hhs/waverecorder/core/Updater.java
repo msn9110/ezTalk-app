@@ -51,8 +51,7 @@ public class Updater extends Thread {
             }
             String account = ", \"account\":{\"user_id\":"
                     + "\"" + user_id + "\", \"password\":"
-                    + "\"" + hashed_password + "\", \"sign_up\":"
-                    + "true}";
+                    + "\"" + hashed_password + "\"}";
             String data = mUpdateData.toString();//.replaceFirst("}$", "") + extraData;
             String json = data.toString().replaceFirst("\\}\\s*$", "")
                     + account + "}";

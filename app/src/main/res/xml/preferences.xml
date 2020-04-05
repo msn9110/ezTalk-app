@@ -1,19 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <EditTextPreference
-        android:title="Host Name"
-        android:key="pref_host"
-        android:inputType="text"
-        android:defaultValue="example.com"
-        android:summary="example.com"
-        android:contentDescription="Enter Host Name"/>
+    <PreferenceCategory
+        android:title="REMOTE SETTINGS">
 
-    <EditTextPreference
-        android:title="Port"
-        android:key="pref_port"
-        android:inputType="numberDecimal"
-        android:defaultValue="5000"
-        android:summary="5000"
-        android:contentDescription="Enter Remote Port Number"/>
-</PreferenceScreen>
+        <EditTextPreference
+            android:title="Host Name"
+            android:key="pref_host"
+            android:inputType="text"
+            android:contentDescription="Enter Host Name"/>
+
+        <EditTextPreference
+            android:title="Port"
+            android:key="pref_port"
+            android:inputType="numberDecimal"
+            android:contentDescription="Enter Remote Port Number"/>
+
+        <EditTextPreference
+            android:title="User Name"
+            android:key="pref_user"
+            android:inputType="text"
+            android:contentDescription="Enter User Name"/>
+
+        <EditTextPreference
+            android:title="Password"
+            android:key="pref_password"
+            android:inputType="textPassword"
+            android:contentDescription="Enter Password"/>
+
+    </PreferenceCategory>
+
+   </PreferenceScreen>

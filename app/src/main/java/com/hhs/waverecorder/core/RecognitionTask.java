@@ -82,8 +82,7 @@ public class RecognitionTask extends AsyncTask<File, Void, String> {
                     JSONArray rawData = new JSONArray(Arrays.asList(raw));
                     String account = ", \"account\":{\"user_id\":"
                             + "\"" + user_id + "\", \"password\":"
-                            + "\"" + hashed_password + "\", \"sign_up\":"
-                            + "true}";
+                            + "\"" + hashed_password + "\"}";
                     String json = "{\"label\":\"" + label + "\","
                             + "\"num_of_stn\": 8,"
                             + "\"filename\":\"" + mFile.getName() + "\", \"raw\":"

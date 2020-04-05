@@ -48,8 +48,7 @@ import static com.hhs.waverecorder.AppValue.RECOGNITION_FINISHED_ACTION;
 import static com.hhs.waverecorder.AppValue.RECORD_FINISHED_ACTION;
 import static com.hhs.waverecorder.AppValue.UPDATE_VOLUME_CIRCLE;
 import static com.hhs.waverecorder.MainActivity.showSoftKeyboard;
-import static com.hhs.waverecorder.utils.Utils.getTone;
-import static com.hhs.waverecorder.utils.Utils.readTables;
+import static com.hhs.waverecorder.Settings.user_id;
 
 @SuppressWarnings("all")
 public class RecoFragment extends Fragment implements VoiceInputListener,
@@ -300,7 +299,7 @@ public class RecoFragment extends Fragment implements VoiceInputListener,
                 if (recorder == null) {
                     // ###STEP 1###
                     SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault());
-                    String path = "MyRecorder/tmp/" + df.format(new Date()) + ".wav";
+                    String path = "MyRecorder/" + user_id + "/tmp/" + df.format(new Date()) + ".wav";
                     recorder = new WAVRecorder(mContext, path, -1, mUIHandler);
                     circle = new VolumeCircle(mContext, 0);
                     volView.addView(circle);
@@ -393,9 +392,9 @@ public class RecoFragment extends Fragment implements VoiceInputListener,
             item.put(mappedFilename, itemContent);
             filesNeedToMove.put(item);
             String originalPath = Environment.getExternalStoragePublicDirectory("MyRecorder")
-                    + "/tmp/" + mappedFilename;
+                    + "/" + user_id + "/tmp/" + mappedFilename;
             String newPath = Environment.getExternalStoragePublicDirectory("MyRecorder")
-                    + "/uploaded/sentence/" + modified + "/" + mappedFilename;
+                    + "/" + user_id + "/uploaded/sentence/" + modified + "/" + mappedFilename;
             files.add(originalPath);
             files.add(newPath);
         }

@@ -27,11 +27,13 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 
 import com.example.hhs.wavrecorder.R;
+import com.hhs.waverecorder.fragment.MyPrefFragment;
 import com.hhs.waverecorder.fragment.RecoFragment;
 import com.hhs.waverecorder.fragment.RecognitionFragment;
 import com.hhs.waverecorder.fragment.VoiceCollectFragment;
 
 import static com.hhs.waverecorder.AppValue.*;
+import static com.hhs.waverecorder.Settings.setAPPSettings;
 
 
 public class MainActivity extends AppCompatActivity
@@ -67,8 +69,10 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         Log.i(TAG, "onCreate : " + Thread.currentThread().getId());
         setContentView(R.layout.activity_main);
+
         mContext = this;
         requestPermission();
+        setAPPSettings(mContext);
 
         navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
@@ -201,12 +205,11 @@ public class MainActivity extends AppCompatActivity
                 mFragment = new VoiceCollectFragment();
                 break;
 
-            case R.id.nav_fragment_recognition:
-                mFragment = new RecognitionFragment();
-                break;
-
             case R.id.nav_fragment_recognition2:
                 mFragment = new RecoFragment();
+                break;
+            case R.id.nav_fragment_pref:
+                mFragment = new MyPrefFragment();
                 break;
         }
 
@@ -214,6 +217,7 @@ public class MainActivity extends AppCompatActivity
         mHandler.sendEmptyMessage(UPDATE_FRAGMENT); // 避免收navigation view卡住
         return true;
     }
+
 
     public static void showSoftKeyboard(View view, Context mContext) {
         if (view.requestFocus()) {

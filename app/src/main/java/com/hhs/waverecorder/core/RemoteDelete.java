@@ -38,8 +38,7 @@ public class RemoteDelete {
                         String url = Settings.URL + "/remove";
                         String account = ", \"account\":{\"user_id\":"
                                 + "\"" + user_id + "\", \"password\":"
-                                + "\"" + hashed_password + "\", \"sign_up\":"
-                                + "true}";
+                                + "\"" + hashed_password + "\"}";
                         String json = data.toString().replaceFirst("\\}\\s*$", "")
                                 + account + "}";
                         System.out.println(json);

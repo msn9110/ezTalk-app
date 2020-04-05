@@ -57,6 +57,7 @@ import java.util.LinkedList;
 import java.util.Locale;
 
 import static com.hhs.waverecorder.AppValue.*;
+import static com.hhs.waverecorder.Settings.user_id;
 import static com.hhs.waverecorder.utils.MyFile.moveFile;
 import static com.hhs.waverecorder.utils.Utils.getTone;
 import static com.hhs.waverecorder.utils.Utils.lookTable;
@@ -264,7 +265,7 @@ public class VoiceCollectFragment extends Fragment implements
         switch (view.getId()) {
             case R.id.btnRec:
                 SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault());
-                String path = "MyRecorder/local/";
+                String path = "MyRecorder/" + user_id + "/local/";
                 int duration = -1;
                 boolean toRec = false;
                 if (!isSentence) {
@@ -549,7 +550,7 @@ public class VoiceCollectFragment extends Fragment implements
             }
 
             String root = Environment.getExternalStoragePublicDirectory("MyRecorder")
-                    .getAbsolutePath();
+                    .getAbsolutePath() + "/" + user_id;
             if (!flag && uploaded) {
                 recordedPath.removeFirst();
                 String relativePath = file.getAbsolutePath().replaceFirst(root + "/local/", "");

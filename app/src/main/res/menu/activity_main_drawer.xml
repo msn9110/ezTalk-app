@@ -5,14 +5,14 @@
 
     <group android:checkableBehavior="single">
         <item
-            android:id="@+id/nav_fragment_recognition"
-            android:title="翻譯" />
-        <item
             android:id="@+id/nav_fragment_recognition2"
-            android:title="翻譯2" />
+            android:title="翻譯" />
         <item
             android:id="@+id/nav_fragment_data_collect"
             android:title="資料蒐集" />
+        <item
+            android:id="@+id/nav_fragment_pref"
+            android:title="設定" />
     </group>
 
 
