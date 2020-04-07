@@ -11,6 +11,9 @@
             android:id="@+id/nav_fragment_data_collect"
             android:title="資料蒐集" />
         <item
+            android:id="@+id/nav_fragment_uploader"
+            android:title="資料上傳" />
+        <item
             android:id="@+id/nav_fragment_pref"
             android:title="設定" />
     </group>

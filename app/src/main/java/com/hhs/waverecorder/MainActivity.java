@@ -30,6 +30,7 @@ import com.example.hhs.wavrecorder.R;
 import com.hhs.waverecorder.fragment.MyPrefFragment;
 import com.hhs.waverecorder.fragment.RecoFragment;
 import com.hhs.waverecorder.fragment.RecognitionFragment;
+import com.hhs.waverecorder.fragment.UploadFragment;
 import com.hhs.waverecorder.fragment.VoiceCollectFragment;
 
 import static com.hhs.waverecorder.AppValue.*;
@@ -208,6 +209,12 @@ public class MainActivity extends AppCompatActivity
             case R.id.nav_fragment_recognition2:
                 mFragment = new RecoFragment();
                 break;
+
+
+            case R.id.nav_fragment_uploader:
+                mFragment = new UploadFragment();
+                break;
+
             case R.id.nav_fragment_pref:
                 mFragment = new MyPrefFragment();
                 break;
