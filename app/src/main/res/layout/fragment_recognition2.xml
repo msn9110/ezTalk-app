@@ -20,6 +20,12 @@
             android:id="@+id/lvResults">
 
         </ListView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="60dp">
+
+        </LinearLayout>
     </LinearLayout>
     <include layout="@layout/recbutton"/>
     <FrameLayout
