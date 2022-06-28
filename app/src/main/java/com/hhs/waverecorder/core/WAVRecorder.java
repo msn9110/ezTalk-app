@@ -10,6 +10,7 @@ import java.util.Arrays;
 import android.content.Context;
 import android.content.Intent;
 import android.media.AudioFormat;
+import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.media.MediaScannerConnection;
@@ -102,10 +103,15 @@ public class WAVRecorder {
     }
 
     public void startRecording() {
+        AudioManager am = (AudioManager)mContext.getSystemService(Context.AUDIO_SERVICE);
+        am.setSpeakerphoneOn(false);
+        am.setStreamVolume(AudioManager.STREAM_VOICE_CALL, 0, AudioManager.STREAM_VOICE_CALL);
+        am.setMode(AudioManager.MODE_IN_CALL);
 
-        recorder = new AudioRecord(MediaRecorder.AudioSource.MIC,
+        recorder = new AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION,
                 RECORDER_SAMPLERATE, RECORDER_CHANNELS,
                 RECORDER_AUDIO_ENCODING, bufferSize);
+
         int i = recorder.getState();
         if (i == 1)
             recorder.startRecording();

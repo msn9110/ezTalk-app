@@ -16,6 +16,7 @@ import java.net.URL;
 
 import static com.hhs.waverecorder.Settings.hashed_password;
 import static com.hhs.waverecorder.Settings.user_id;
+import static com.hhs.waverecorder.utils.Utils.getJSONString;
 
 public class RemoteDelete {
     private File mFile;
@@ -45,7 +46,7 @@ public class RemoteDelete {
 
                         URL u = new URL(url);
                         conn = (HttpURLConnection) u.openConnection();
-                        conn.setRequestMethod("DELETE");
+                        conn.setRequestMethod("PUT");
                         conn.setRequestProperty("Content-Type","application/json; charset=UTF-8");
                         conn.setRequestProperty("Accept", "application/json");
                         conn.setDoInput(true);
@@ -57,6 +58,13 @@ public class RemoteDelete {
                         writer.write(json.getBytes("UTF-8"));
                         os.flush();
                         os.close();
+
+                        String myResult = getJSONString(conn.getInputStream());
+
+                        JSONObject response = new JSONObject(myResult);
+                        boolean success = response.getBoolean("success");
+
+                        System.out.println(success);
 
                     } catch (JSONException e) {
                         e.printStackTrace();

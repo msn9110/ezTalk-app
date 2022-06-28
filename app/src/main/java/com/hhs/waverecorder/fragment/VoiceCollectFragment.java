@@ -3,6 +3,7 @@ package com.hhs.waverecorder.fragment;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.MediaScannerConnection;
 import android.os.Bundle;
@@ -44,6 +45,7 @@ import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -56,6 +58,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Locale;
 
+import static android.app.Activity.RESULT_OK;
 import static com.hhs.waverecorder.AppValue.*;
 import static com.hhs.waverecorder.Settings.user_id;
 import static com.hhs.waverecorder.utils.MyFile.moveFile;
@@ -67,7 +70,8 @@ import static com.hhs.waverecorder.utils.Utils.sortJSONArrayByCount;
 @SuppressWarnings("all")
 public class VoiceCollectFragment extends Fragment implements
         View.OnClickListener, AdapterView.OnItemSelectedListener,
-        OnCursorChangedListener, VoiceInputListener {
+        OnCursorChangedListener, VoiceInputListener, View.OnLongClickListener
+{
 
 
     public static VoiceCollectFragment newInstance(String czJSONString) {
@@ -105,12 +109,12 @@ public class VoiceCollectFragment extends Fragment implements
     //UI Variable
     ProgressDialog loadingPage;
     ImageButton btnRec;
-    Button btnDel, btnMoveCursor;
+    Button btnDel, btnMoveCursor, btnFile;
     FrameLayout volView;
     Spinner spMyLabel, spTone;
     MyText txtWord;
     CheckBox chkUpload, chkSeq;
-    TextView tvRecNOW, tvCorrect, tvTotal, tvPath, tvRes;
+    TextView tvRecNOW, tvCorrect, tvTotal, tvPath, tvRes, tvFile;
     VolumeCircle circle = null;
 
     //Global Data
@@ -125,6 +129,10 @@ public class VoiceCollectFragment extends Fragment implements
     int total = 0, seq = 0;
     WAVRecorder recorder = null;
     ArrayList<String> chosenLabels = new ArrayList<>();
+    String file_path = "";
+
+    //Constant
+    final int FILE_CHOOSE_REQUEST_CODE = 19;
 
     //State Variable
     boolean isSentence = false;
@@ -140,6 +148,7 @@ public class VoiceCollectFragment extends Fragment implements
         txtWord = mView.findViewById(R.id.txtMsg);
         btnRec = mView.findViewById(R.id.btnRec);
         btnDel = mView.findViewById(R.id.btnDel);
+        btnFile = mView.findViewById(R.id.btnFile);
         btnMoveCursor = mView.findViewById(R.id.btnMoveCursor);
         spMyLabel = mView.findViewById(R.id.spMyLabel);
         spTone = mView.findViewById(R.id.spTone);
@@ -147,6 +156,7 @@ public class VoiceCollectFragment extends Fragment implements
         tvPath = mView.findViewById(R.id.tvPath);
         tvTotal = mView.findViewById(R.id.tvTotal);
         tvCorrect = mView.findViewById(R.id.tvCorrect);
+        tvFile = mView.findViewById(R.id.tvFile);
         tvRes = mView.findViewById(R.id.tvRes);
         chkUpload = mView.findViewById(R.id.chkUpload);
         chkSeq = mView.findViewById(R.id.chkSeq);
@@ -155,15 +165,25 @@ public class VoiceCollectFragment extends Fragment implements
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 txtWord.setEnabled(!b);
                 if (chosenLabels.size() > 0) {
-                    if (!chosenLabels.get(0).contentEquals("-")) {
-                        String current = chosenLabels.get(0).replaceAll("[˙ˊˇˋ_]", "");
+                    String text = txtWord.getText().toString();
+                    if (text.length() == 1) {
+                        if (!chosenLabels.get(0).contentEquals("-")) {
+                            String current = chosenLabels.get(0).replaceAll("[˙ˊˇˋ_]", "");
+                            try {
+                                seq = keys.indexOf(current);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    } else {
                         try {
-                            seq = keys.indexOf(current);
+                            seq = keys.indexOf(text);
                         } catch (Exception e) {
                             e.printStackTrace();
+                            seq = 0;
                         }
-
                     }
+
                 }
                 if (b) {
                     seq_next();
@@ -180,6 +200,9 @@ public class VoiceCollectFragment extends Fragment implements
         btnRec.setOnClickListener(this);
         btnDel.setOnClickListener(this);
         btnMoveCursor.setOnClickListener(this);
+        btnMoveCursor.setOnLongClickListener(this);
+        btnFile.setOnClickListener(this);
+        btnFile.setOnLongClickListener(this);
 
         ArrayAdapter<String> ad = new ArrayAdapter<>(mContext, R.layout.myspinner,
                                     Arrays.asList("0", "1", "2", "3", "4"));
@@ -212,18 +235,11 @@ public class VoiceCollectFragment extends Fragment implements
             JSONObject tables = readTables(mContext);
             czTable = tables.getJSONObject("czTable");
             zcTable = tables.getJSONObject("zcTable");
-            InputStream is = mContext.getAssets().open("keys.txt");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                keys.add(line);
-            }
-            reader.close();
         } catch (JSONException e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
+
+        loadKeys("");
     }
 
     @Nullable
@@ -334,6 +350,10 @@ public class VoiceCollectFragment extends Fragment implements
                     txtWord.setSelection((txtWord.getSelectionEnd() + 1) % (txtWord.length() + 1));
                 }
 
+                break;
+
+            case R.id.btnFile:
+                choose_file();
                 break;
         }
     }
@@ -567,19 +587,28 @@ public class VoiceCollectFragment extends Fragment implements
     }
 
     private void seq_next() {
-        String zhuyin = keys.get(seq);
+        if (seq < 0)
+            seq += keys.size();
+        System.out.println(seq);
+        String my_label = keys.get(seq);
         try {
-            JSONArray array = zcTable.getJSONArray(zhuyin);
-            String word = sortJSONArrayByCount(array, false)
-                    .getJSONObject(0)
-                    .keys()
-                    .next();
-            txtWord.setText(word);
+            String text;
+            if (tvFile.getText().length() > 0) {
+                text = my_label;
+            } else {
+                JSONArray array = zcTable.getJSONArray(my_label);
+                text = sortJSONArrayByCount(array, false)
+                        .getJSONObject(0)
+                        .keys()
+                        .next();
+            }
+
+            txtWord.setText(text);
             txtWord.setSelection(1);
             int idx = 0;
             for (int i = 0; i < spMyLabel.getAdapter().getCount(); i++) {
                 String label = (String) spMyLabel.getAdapter().getItem(i);
-                if (label.startsWith(zhuyin)) {
+                if (label.startsWith(my_label)) {
                     idx = i;
                     break;
                 }
@@ -590,6 +619,81 @@ public class VoiceCollectFragment extends Fragment implements
             e.printStackTrace();
             seq = (seq + 1) % keys.size();
             seq_next();
+        }
+    }
+
+    @Override
+    public boolean onLongClick(View view) {
+        switch (view.getId()) {
+            case R.id.btnFile:
+                tvFile.setText("");
+                loadKeys("");
+                break;
+            case R.id.btnMoveCursor:
+                if (chkSeq.isChecked()) {
+                    seq -= 1;
+                    seq_next();
+                }
+        }
+        return false;
+    }
+
+    private void loadKeys(String path) {
+
+        try {
+            InputStream is;
+            if (path.length() == 0)
+                is = mContext.getAssets().open("keys.txt");
+            else {
+                is = new FileInputStream(new File(path));
+            }
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            String line;
+            keys.clear();
+            while ((line = reader.readLine()) != null) {
+                keys.add(line);
+            }
+            reader.close();
+            seq = 0;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        if (keys.isEmpty()) {
+            loadKeys("");
+        }
+    }
+
+    private void choose_file() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+
+        // Update with mime types
+        intent.setType("text/plain");
+
+        // Only pick openable and local files. Theoretically we could pull files from google drive
+        // or other applications that have networked files, but that's unnecessary for this example.
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+
+        // REQUEST_CODE = <some-integer>
+        startActivityForResult(intent, FILE_CHOOSE_REQUEST_CODE);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        // If the user doesn't pick a file just return
+        if (resultCode != RESULT_OK) {
+            return;
+        }
+
+        switch (requestCode) {
+            case FILE_CHOOSE_REQUEST_CODE:
+                file_path = data.getData().getPath().replaceFirst("^/file", "");
+                loadKeys(file_path);
+                tvFile.setText(file_path);
+                System.out.println(file_path);
+                break;
         }
     }
 }

@@ -11,6 +11,7 @@ import com.hhs.waverecorder.Settings;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -80,13 +81,20 @@ public class RecognitionTask extends AsyncTask<File, Void, String> {
                     for (int i = 0; i < raws.length; i++)
                         raw[i] = 0xff & raws[i];
                     JSONArray rawData = new JSONArray(Arrays.asList(raw));
-                    String account = ", \"account\":{\"user_id\":"
+                    JSONObject account = new JSONObject();
+                    account = account.put("user_id", user_id)
+                            .put("password", hashed_password);
+                    JSONObject data = new JSONObject()
+                            .put("account", account)
+                            .put("label", label)
+                            .put("num_of_stn", 8)
+                            .put("filename", mFile.getName())
+                            .put("raw", rawData.getJSONArray(0));
+                    String accounts = ", \"account\":{\"user_id\":"
                             + "\"" + user_id + "\", \"password\":"
                             + "\"" + hashed_password + "\"}";
-                    String json = "{\"label\":\"" + label + "\","
-                            + "\"num_of_stn\": 8,"
-                            + "\"filename\":\"" + mFile.getName() + "\", \"raw\":"
-                            + rawData.getJSONArray(0).toString() + account + "}";
+                    String json = data.toString();
+                    System.out.println(json);
 
                     URL u = new URL(url);
                     conn = (HttpURLConnection) u.openConnection();
